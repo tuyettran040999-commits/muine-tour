@@ -114,18 +114,18 @@ elif menu == "🎯 2. Gom Xe & Điều Phối Tour (Ops)":
             col_o1, col_o2 = st.columns(2)
             with col_o1:
                 st.markdown("##### 🚎 Chi Phí Vận Chuyển Cố Định")
-                tai_xe = st.text_input("Họ tên Tài xế", value=str(current_op["Tài Xế"].values) if not current_op.empty else "")
-                bien_so = st.text_input("Biển số xe", value=str(current_op["Biển Số"].values) if not current_op.empty else "")
-                cost_xe = st.number_input("Giá thuê xe trọn gói chuyến (VND) *", min_value=0, value=int(current_op["Chi Phí Xe (VND)"].values) if not current_op.empty else 2000000)
+                tai_xe = st.text_input("Họ tên Tài xế", value=str(current_op["Tài Xế"].values[0]) if not current_op.empty else "")
+                bien_so = st.text_input("Biển số xe", value=str(current_op["Biển Số"].values[0]) if not current_op.empty else "")
+                cost_xe = st.number_input("Giá thuê xe trọn gói chuyến (VND) *", min_value=0, value=int(current_op["Chi Phí Xe (VND)"].values[0]) if not current_op.empty else 2000000)
             with col_o2:
                 st.markdown("##### 🏨 Chi Phí Dịch Vụ Tour & Nhân Sự")
-                hdv = st.text_input("Hướng Dẫn Viên", value=str(current_op["Hướng Dẫn Viên"].values) if not current_op.empty else "")
-                cost_hdv = st.number_input("Tiền công tác phí HDV (VND) *", min_value=0, value=int(current_op["Chi Phí HDV (VND)"].values) if not current_op.empty else 800000)
-                n_hang = st.text_input("Nhà hàng ăn uống", value=str(current_op["Nhà Hàng"].values) if not current_op.empty else "")
-                k_san = st.text_input("Khách sạn / Nhà Tàu", value=str(current_op["Khách Sạn"].values) if not current_op.empty else "")
-                v_tq = st.text_input("Vé thắng cảnh / Điểm tham quan", value=str(current_op["Vé Tham Quan"].values) if not current_op.empty else "")
-                cost_tour_pax = st.number_input("Chi phí dịch vụ tính trên ĐẦU NGƯỜI", min_value=0, value=int(current_op["Chi Phí Tour/Khách (VND)"].values) if not current_op.empty else 600000)
-            ghi_chu_ops = st.text_area("Yêu cầu đặc biệt cho nhà xe/hướng dẫn viên", value=str(current_op["Ghi Chú"].values) if not current_op.empty else "")
+                hdv = st.text_input("Hướng Dẫn Viên", value=str(current_op["Hướng Dẫn Viên"].values[0]) if not current_op.empty else "")
+                cost_hdv = st.number_input("Tiền công tác phí HDV (VND) *", min_value=0, value=int(current_op["Chi Phí HDV (VND)"].values[0]) if not current_op.empty else 800000)
+                n_hang = st.text_input("Nhà hàng ăn uống", value=str(current_op["Nhà Hàng"].values[0]) if not current_op.empty else "")
+                k_san = st.text_input("Khách sạn / Nhà Tàu", value=str(current_op["Khách Sạn"].values[0]) if not current_op.empty else "")
+                v_tq = st.text_input("Vé thắng cảnh / Điểm tham quan", value=str(current_op["Vé Tham Quan"].values[0]) if not current_op.empty else "")
+                cost_tour_pax = st.number_input("Chi phí dịch vụ tính trên ĐẦU NGƯỜI", min_value=0, value=int(current_op["Chi Phí Tour/Khách (VND)"].values[0]) if not current_op.empty else 600000)
+            ghi_chu_ops = st.text_area("Yêu cầu đặc biệt cho nhà xe/hướng dẫn viên", value=str(current_op["Ghi Chú"].values[0]) if not current_op.empty else "")
             
             if st.form_submit_button("💾 Cập Nhật Bảng Điều Hành Tour"):
                 st.session_state.tour_ops = st.session_state.tour_ops[st.session_state.tour_ops["Mã Xe Ghép"] != chuyen_chon]
@@ -152,12 +152,12 @@ elif menu == "💵 3. Quyết Toán Hoa Hồng Sales & Đại Lý":
     
     st.markdown("##### 🔍 Chi tiết nghĩa vụ hoa hồng theo phương thức xử lý")
     col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        st.info("🔹 Loại 1: Công ty chi trả sau")df_tra_sau = df_bk[df_bk["Hình Thức HH"] == "Công ty chi trả sau"]
+    with col_t1:st.info("🔹 hotspot_1: Công ty chi trả sau")
+df_tra_sau = df_bk[df_bk["Hình Thức HH"] == "Công ty chi trả sau"]
 st.dataframe(df_tra_sau[["Mã BK", "Người Bán/Đối Tác", "Số Khách", "Tổng Hoa Hồng", "Trạng Thái Thu"]], use_container_width=True)
 st.metric("Tổng Hoa Hồng Cần Trả Sau", f"{df_tra_sau['Tổng Hoa Hồng'].sum():,} VND")
 with col_t2:
-st.success("🔹 Loại 2: Trừ thẳng khi thanh toán (Thu hộ)")
+st.success("🔹 hotspot_2: Trừ thẳng khi thanh toán (Thu hộ)")
 df_tru_thang = df_bk[df_bk["Hình Thức HH"] == "Trừ thẳng khi thanh toán (Thu hộ)"]
 st.dataframe(df_tru_thang[["Mã BK", "Người Bán/Đối Tác", "Số Khách", "Tổng Hoa Hồng", "Tổng Doanh Thu"]], use_container_width=True)
 st.metric("Tổng Số Tiền Thực Thu Hộ", f"{(df_tru_thang['Tổng Doanh Thu'].sum() - df_tru_thang['Tổng Hoa Hồng'].sum()):,} VND")
@@ -176,13 +176,13 @@ tong_pax = df_bk_chuyen["Số Khách"].sum()
 revenue = (df_bk_chuyen["Số Khách"] * df_bk_chuyen["Giá Bán/Khách"]).sum()
 total_hh = (df_bk_chuyen["Số Khách"] * df_bk_chuyen["Mức HH/Khách"]).sum()
 if not df_ops_chuyen.empty:
-cost_xe_co_dinh = int(df_ops_chuyen["Chi Phí Xe (VND)"].values) + int(df_ops_chuyen["Chi Phí HDV (VND)"].values)
-cost_bien_doi_pax = tong_pax * int(df_ops_chuyen["Chi Phí Tour/Khách (VND)"].values)
+cost_xe_co_dinh = int(df_ops_chuyen["Chi Phí Xe (VND)"].values[0]) + int(df_ops_chuyen["Chi Phí HDV (VND)"].values[0])
+cost_bien_doi_pax = tong_pax * int(df_ops_chuyen["Chi Phí Tour/Khách (VND)"].values[0])
 total_ops_cost = cost_xe_co_dinh + cost_bien_doi_pax
 st.markdown(f"""
 
-Tài xế: {df_ops_chuyen['Tài Xế'].values} ({df_ops_chuyen['Biển Số'].values}) | HDV: {df_ops_chuyen['Hướng Dẫn Viên'].values}
-Nhà hàng: {df_ops_chuyen['Nhà Hàng'].values} | Khách sạn: {df_ops_chuyen['Khách Sạn'].values} | Ghi chú: {df_ops_chuyen['Ghi Chú'].values}
+Tài xế: {df_ops_chuyen['Tài Xế'].values[0]} ({df_ops_chuyen['Biển Số'].values[0]}) | HDV: {df_ops_chuyen['Hướng Dẫn Viên'].values[0]}
+Nhà hàng: {df_ops_chuyen['Nhà Hàng'].values[0]} | Khách sạn: {df_ops_chuyen['Khách Sạn'].values[0]} | Ghi chú: {df_ops_chuyen['Ghi Chú'].values[0]}
 
 """, unsafe_allow_html=True)
 else:
