@@ -1,252 +1,284 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import os
 
-st.set_page_config(page_title="Hệ Thống Điều Hành & Tài Chính Tour Ghép", layout="wide")
-st.title("🏛️ HỆ THỐNG ĐIỀU HÀNH & TÀI CHÍNH TOUR GHÉP TOÀN DIỆN")
-st.caption("Giao diện vận hành Cloud: Quản lý khách ghép, Điều hành Ops, Tính hoa hồng & Quản lý công nợ Nhà cung cấp")
+st.set_page_config(page_title="Hệ Thống Quản Lý & Kế Toán Tour Toàn Diện", layout="wide")
+st.title("🏛️ HỆ THỐNG ĐIỀU HÀNH & KẾ TOÁN TOUR CÔNG TY TOÀN DIỆN")
+st.caption("Bản nâng cấp Master Log: Kết hợp Nhập liệu, Điều hành xe (Ops), Quản lý hoa hồng Sales và Công nợ NCC")
 
-# --- KHỞI TẠO CƠ SỞ DỮ LIỆU MẪU BAN ĐẦU ---
-if 'tours' not in st.session_state:
-    st.session_state.tours = ["Hà Nội - Hạ Long 2N1Đ", "Sài Gòn - Phú Quốc 3N2Đ", "Đà Nẵng - Hội An 4N3Đ"]
+# --- ĐƯỜNG DẪN TỆP LƯU TRỮ DỮ LIỆU ---
+MASTER_BOOKING_FILE = "master_bookings.csv"
+MASTER_OPS_FILE = "master_ops.csv"
 
-if 'bookings' not in st.session_state:
-    st.session_state.bookings = pd.DataFrame([
-        {
-            "Mã BK": "BK001", "Tour": "Hà Nội - Hạ Long 2N1Đ", "Ngày Đi": datetime.date(2026, 11, 5), 
-            "Khách": "Anh Hùng", "Số Khách": 4, "Điểm Đón": "Nhà Hát Lớn", "Mã Xe Ghép": "XE-HALONG-0511", 
-            "Nguồn Khách": "Sales Nội Bộ", "Người Bán/Đối Tác": "Nguyễn Văn Tuấn (Sales)", "Mức HH/Khách": 50000,
-            "Giá Bán/Khách": 1500000, "Hình Thức HH": "Công ty chi trả sau", "Trạng Thái Thu": "Đã thu đủ"
-        },
-        {
-            "Mã BK": "BK002", "Tour": "Hà Nội - Hạ Long 2N1Đ", "Ngày Đi": datetime.date(2026, 11, 5), 
-            "Khách": "Chị Lan", "Số Khách": 6, "Điểm Đón": "12 Chùa Bộc", "Mã Xe Ghép": "XE-HALONG-0511", 
-            "Nguồn Khách": "Đối Tác Bên Ngoài", "Người Bán/Đối Tác": "Đại lý Tourgiare (Anh Minh)", "Mức HH/Khách": 150000,
-            "Giá Bán/Khách": 1500000, "Hình Thức HH": "Trừ thẳng khi thanh toán (Thu hộ)", "Trạng Thái Thu": "Đã thu đủ"
-        },
-        {
-            "Mã BK": "BK003", "Tour": "Hà Nội - Hạ Long 2N1Đ", "Ngày Đi": datetime.date(2026, 11, 5), 
-            "Khách": "Cô Mai", "Số Khách": 2, "Điểm Đón": "KS Daewoo", "Mã Xe Ghép": "XE-HALONG-0511", 
-            "Nguồn Khách": "Đối Tác Bên Ngoài", "Người Bán/Đối Tác": "Đại lý Flamingo", "Mức HH/Khách": 100000,
-            "Giá Bán/Khách": 1400000, "Hình Thức HH": "Công ty chi trả sau", "Trạng Thái Thu": "Đã thu đủ"
-        }
-    ])
+# --- HÀM TỰ ĐỘNG LƯU TRỮ VÀ KHỞI TẠO CƠ SỞ DỮ LIỆU CHUẨN ĐÚNG THEO FILE EXCEL ---
+def load_system_data():
+    if os.path.exists(MASTER_BOOKING_FILE):
+        df_b = pd.read_csv(MASTER_BOOKING_FILE)
+        df_b["Ngày Đi"] = pd.to_datetime(df_b["Ngày Đi"]).dt.date
+    else:
+        # Cấu trúc dòng dữ liệu mẫu chuẩn y hệt file Excel thực tế của bạn
+        df_b = pd.DataFrame([
+            {
+                "Mã BK": "MTG-2607001", "Ngày Đi": datetime.date(2026, 7, 1), "Giờ Đón": "04:30:00",
+                "Dịch Vụ": "Tour", "Loại Hình": "Ind.", "Tuyến Đi": "Mekong Only", "Mã Xe Ghép": "XE-7C-HUNG",
+                "Số Pax": 4, "Đối Tác": "Ms. An - Hoàng Ngọc", "Tên Khách": "Mr. Kaczorowski Przemyslaw",
+                "Điểm Đón": "Hoàng Ngọc", "Doanh Thu USD": 0.0, "Doanh Thu VND": 7800000,
+                "Phương Thức TT": "HDV thu khách", "Giá Vốn NCC": 3000000, "Nhà Cung Cấp": "Chị Hường",
+                "Tên Sales": "Như", "Tỷ Lệ HH": 0.1, "Lưu Ý": "Đã nhận 240$"
+            },
+            {
+                "Mã BK": "MTG-2607002", "Ngày Đi": datetime.date(2026, 7, 7), "Giờ Đón": "05:30:00",
+                "Dịch Vụ": "Tour", "Loại Hình": "Ind.", "Tuyến Đi": "Dalat Premium", "Mã Xe Ghép": "XE-7C-DUC-ANH",
+                "Số Pax": 3, "Đối Tác": "Pegas", "Tên Khách": "Tarasov Aleksandr",
+                "Điểm Đón": "Bamboo Resort", "Doanh Thu USD": 270.0, "Doanh Thu VND": 7047000,
+                "Phương Thức TT": "HDV thu khách", "Giá Vốn NCC": 3209000, "Nhà Cung Cấp": "Đức Anh",
+                "Tên Sales": "Ân", "Tỷ Lệ HH": 0.05, "Lưu Ý": "Đã nhận cọc"
+            }
+        ])
+    
+    if os.path.exists(MASTER_OPS_FILE):
+        df_o = pd.read_csv(MASTER_OPS_FILE)
+    else:
+        df_o = pd.DataFrame([
+            {
+                "Mã Xe Ghép": "XE-7C-HUNG", "Tài Xế": "Hùng", "Biển Số": "86A-X1.23", "Hướng Dẫn Viên": "Xuân Lâm", "Lưu Ý Xe": "Xe sạch sẽ"
+            },
+            {
+                "Mã Xe Ghép": "XE-7C-DUC-ANH", "Tài Xế": "Đức Anh", "Biển Số": "86B-Y4.56", "Hướng Dẫn Viên": "Quốc Uy", "Lưu Ý Xe": "Khách VIP"
+            }
+        ])
+    return df_b, df_o
 
-if 'tour_ops' not in st.session_state:
-    st.session_state.tour_ops = pd.DataFrame([
-        {
-            "Mã Xe Ghép": "XE-HALONG-0511", 
-            "Tài Xế": "Lê Hoàng Nam", "Biển Số": "29B-456.78", "Chi Phí Xe (VND)": 2000000, 
-            "Hướng Dẫn Viên": "Trần Văn Tâm", "Chi Phí HDV (VND)": 800000,
-            "Nhà Hàng": "Hồng Hạnh Hạ Long", "Khách Sạn": "Paradise Sails", "Vé Tham Quan": "Vé Tuyến 2",
-            "Chi Phí Tour/Khách (VND)": 600000, "Ghi Chú": "Nhóm BK002 có 1 khách dị ứng hải sản."
-        }
-    ])
+def save_system_data(df_b, df_o):
+    df_b.to_csv(MASTER_BOOKING_FILE, index=False)
+    df_o.to_csv(MASTER_OPS_FILE, index=False)
 
-# --- THANH MENU ĐIỀU HƯỚNG ---
+# Nạp dữ liệu vào phiên làm việc online
+if 'bookings' not in st.session_state or 'tour_ops' not in st.session_state:
+    st.session_state.bookings, st.session_state.tour_ops = load_system_data()
+
+# --- THANH MENU ĐIỀU HƯỚNG NGHIỆP VỤ ---
 menu = st.sidebar.radio("PHÂN HỆ NGHIỆP VỤ", [
-    "📥 1. Nhập Đặt Tour Mới",
-    "🎯 2. Gom Xe & Điều Phối Tour (Ops)",
-    "💵 3. Quyết Toán Hoa Hồng Sales & Đại Lý",
-    "📊 4. Báo Cáo Doanh Thu Lợi Nhuận Đối Tác",
-    "🏦 5. Quản Lý Công Nợ Nhà Cung Cấp"
+    "📥 1. Nhập Liệu Master Log Mới",
+    "🎯 2. Điều Phối Điều Xe & HDV (Ops)",
+    "💵 3. Kế Toán Thu Hộ & Cọc Khách",
+    "📊 4. Trung Tâm Báo Cáo Tài Chính (P&L)",
+    "🏦 5. Quản Lý Công Nợ Nhà Cung Cấp",
+    "🗂️ 6. Bảng Tổng Hợp Dữ Liệu Toàn Diện (Master)"
 ])
 
 # ==========================================
-# --- PHÂN HỆ 1: NHẬP ĐẶT TOUR MỚI ---
+# --- PHÂN HỆ 1: NHẬP LIỆU MASTER LOG MỚI ---
 # ==========================================
-if menu == "📥 1. Nhập Đặt Tour Mới":
-    st.subheader("📥 Tiếp nhận dữ liệu đặt tour lẻ / Đoàn ghép lẻ")
-    with st.form("main_booking_form", clear_on_submit=True):
+if menu == "📥 1. Nhập Liệu Master Log Mới":
+    st.subheader("📥 Tiếp nhận dữ liệu Đơn hàng / Tour mới")
+    with st.form("master_booking_form", clear_on_submit=True):
         col1, col2, col3 = st.columns(3)
         with col1:
-            tour = st.selectbox("Chọn Tour du lịch", st.session_state.tours)
-            ngay_di = st.date_input("Ngày khởi hành", datetime.date(2026, 11, 5))
-            ten_khach = st.text_input("Tên khách / Đại diện nhóm *")
-            so_khach = st.number_input("Số lượng khách (Pax) *", min_value=1, step=1, value=2)
-            diem_don = st.text_input("Địa điểm đón khách chi tiết")
-        with col2:
-            gia_ban = st.number_input("Giá bán/Khách (VND)", min_value=0, value=1500000, step=50000)
-            nguon_khach = st.selectbox("Nguồn khách hàng *", ["Sales Nội Bộ", "Đối Tác Bên Ngoài"])
-            nguoi_ban = st.text_input("Tên Nhân viên Sales / Tên Đại lý bên ngoài *")
-            ma_xe_ban_dau = st.text_input("Gán mã chuyến xe ghép (Nếu có)", value="XE-HALONG-0511")
-        with col3:
-            hh_pax = st.number_input("Mức hoa hồng chi trả / 1 Khách (VND)", min_value=0, value=100000, step=10000)
-            hinh_thuc_hh = st.selectbox("Hình thức xử lý hoa hồng *", ["Công ty chi trả sau", "Trừ thẳng khi thanh toán (Thu hộ)"])
-            trang_thai_thu = st.selectbox("Trạng thái thu tiền gốc", ["Đã thu đủ", "Chờ chuyển tiền"])
+            st.markdown("##### 📝 Thông Tin Hành Trình")
+            ma_bk = st.text_input("Mã Đặt Tour (CODE) *", value=f"MTG-{datetime.date.today().strftime('%y%m')}{len(st.session_state.bookings)+1:03d}")
+            ngay_di = st.date_input("Ngày khởi hành *", datetime.date(2026, 7, 1))
+            gio_don = st.text_input("Giờ đón khách", value="04:30:00")
+            dich_vu = st.selectbox("Dịch vụ", ["Tour", "Transfer", "Vé", "Hotel", "Events"])
+            loai_hinh = st.text_input("Loại hình (Ví dụ: Ind., Group, Drop-off)", value="Ind.")
+            tuyen_di = st.text_input("Tuyến đường / Tên Tour *", value="Mũi Né - Bàu Trắng")
             
-        if st.form_submit_button("💾 Lưu Thông Tin Đặt Tour"):
-            if ten_khach and nguoi_ban:
-                ma_bk = f"BK{len(st.session_state.bookings) + 101}"
-                new_bk = {
-                    "Mã BK": ma_bk, "Tour": tour, "Ngày Đi": ngay_di, "Khách": ten_khach, "Số Khách": so_khach, 
-                    "Điểm Đón": diem_don, "Mã Xe Ghép": ma_xe_ban_dau, "Nguồn Khách": nguon_khach, 
-                    "Người Bán/Đối Tác": nguoi_ban, "Mức HH/Khách": hh_pax, "Giá Bán/Khách": gia_ban, 
-                    "Hình Thức HH": hinh_thuc_hh, "Trạng Thái Thu": trang_thai_thu
-                }
-                st.session_state.bookings = pd.concat([st.session_state.bookings, pd.DataFrame([new_bk])], ignore_index=True)
-                st.success(f"✔️ Đã lưu thành công Booking {ma_bk} vào hệ thống!")
-                st.rerun()
-                
-    st.write("### 📜 Toàn bộ danh sách booking hiện tại trên hệ thống")
+        with col2:
+            st.markdown("##### 👤 Khách Hàng & Doanh Thu")
+            ten_khach = st.text_input("Tên khách hàng / Đại diện đoàn", value="Mr. John Doe")
+            so_pax = st.number_input("Số lượng khách (Số PAX) *", min_value=1, step=1, value=2)
+            diem_don = st.text_input("Điểm đón khách (Khách sạn/Resort)", value="Centara Resort")
+            doi_tac = st.text_input("Đối tác gửi khách / Đại lý", value="Fun&Sun")
+            dt_usd = st.number_input("Doanh thu bằng USD (Nếu có)", min_value=0.0, value=0.0)
+            dt_vnd = st.number_input("Doanh thu bằng VND *", min_value=0, value=1500000, step=100000)
+            
+        with col3:
+            st.markdown("##### 💰 Chi Phí NCC & Hoa Hồng Sales")
+            pt_tt = st.selectbox("Phương thức thanh toán", ["HDV thu khách", "TX thu khách", "Chuyển khoản", "Công nợ", "Tiền mặt"])
+            gia_von = st.number_input("Giá vốn phải trả NCC (VND) *", min_value=0, value=900000, step=50000)
+            ncc_ten = st.text_input("Tên Nhà cung cấp (NCC dịch vụ)", value="Jeep Trương")
+            sales_name = st.text_input("Nhân viên Sales phụ trách *", value="Như")
+            ty_le_hh = st.selectbox("Mức trích phần trăm hoa hồng Sales", [0.10, 0.05, 0.0, 0.15], format_func=lambda x: f"{x*100}%")
+            ma_xe_gan = st.text_input("Gán Mã Chuyến xe ghép quản lý", value="XE-7C-HUNG")
+            luru_y = st.text_area("Ghi chú đặc biệt lưu ý đơn")
+
+        if st.form_submit_button("💾 Lưu Dữ Liệu Vào Master Log"):
+            new_row = {
+                "Mã BK": ma_bk, "Ngày Đi": ngay_di, "Giờ Đón": gio_don, "Dịch Vụ": dich_vu, "Loại Hình": loai_hinh,
+                "Tuyến Đi": tuyen_di, "Mã Xe Ghép": ma_xe_gan, "Số Pax": so_pax, "Đối Tác": doi_tac, "Tên Khách": ten_khach,
+                "Điểm Đón": diem_don, "Doanh Thu USD": dt_usd, "Doanh Thu VND": dt_vnd, "Phương Thức TT": pt_tt,
+                "Giá Vốn NCC": gia_von, "Nhà Cung Cấp": ncc_ten, "Tên Sales": sales_name, "Tỷ Lệ HH": ty_le_hh, "Lưu Ý": luru_y
+            }
+            st.session_state.bookings = pd.concat([st.session_state.bookings, pd.DataFrame([new_row])], ignore_index=True)
+            save_system_data(st.session_state.bookings, st.session_state.tour_ops)
+            st.success(f"✔️ Đã ghi nhận thành công đơn hàng {ma_bk} vào tệp dữ liệu!")
+            st.rerun()
+
+    st.write("### 📜 Nhật ký Master Log hiện tại")
     st.dataframe(st.session_state.bookings, use_container_width=True)
 
 # ==========================================
-# --- PHÂN HỆ 2: GOM XE & ĐIỀU PHỐI (OPS) ---
+# --- PHÂN HỆ 2: ĐIỀU PHỐI ĐIỀU XE & HDV ---
 # ==========================================
 elif menu == "🎯 2. Gom Xe & Điều Phối Tour (Ops)":
-    st.subheader("🎯 Quản lý Điều Hành: Gộp khách lẻ vào xe & Khai báo chi phí dịch vụ")
-    with st.expander("🔀 Gán hoặc Thay đổi chuyến xe ghép nhanh cho Khách lẻ"):
-        with st.form("quick_assign_form"):
-            bk_select = st.selectbox("Chọn mã Booking lẻ cần xếp xe", st.session_state.bookings["Mã BK"].tolist())
-            ma_xe_nhap = st.text_input("Nhập Mã Xe Ghép / Mã Chuyến đi")
-            if st.form_submit_button("Xác nhận gán xe nhanh"):
-                st.session_state.bookings.loc[st.session_state.bookings["Mã BK"] == bk_select, "Mã Xe Ghép"] = ma_xe_nhap
-                st.success(f"Đã chuyển khách hàng {bk_select} vào xe {ma_xe_nhap}!")
-                st.rerun()
-
-    list_chuyen = list(set(st.session_state.bookings["Mã Xe Ghép"].tolist()))
-    list_chuyen = [x for x in list_chuyen if pd.notna(x) and x != "Chưa xếp xe"]
+    st.subheader("🎯 Khai báo thông tin Điều hành phương tiện & Nhân sự (Ops)")
     
-    if list_chuyen:
-        chuyen_chon = st.selectbox("🔍 Chọn mã Chuyến xe ghép để thiết lập Điều Tour & Xe:", list_chuyen)
-        khach_thuoc_chuyen = st.session_state.bookings[st.session_state.bookings["Mã Xe Ghép"] == chuyen_chon]
-        tong_pax = khach_thuoc_chuyen["Số Khách"].sum()
-        st.info(f"📊 Xe ghép {chuyen_chon} hiện đang có {tong_pax} khách.")
-        
-        current_op = st.session_state.tour_ops[st.session_state.tour_ops["Mã Xe Ghép"] == chuyen_chon]
-        
-        with st.form("ops_main_form"):
-            col_o1, col_o2 = st.columns(2)
-            with col_o1:
-                st.markdown("##### 🚎 Chi Phí Vận Chuyển Cố Định")
-                tai_xe = st.text_input("Họ tên Tài xế", value=str(current_op["Tài Xế"].values[0]) if not current_op.empty else "")
-                bien_so = st.text_input("Biển số xe", value=str(current_op["Biển Số"].values[0]) if not current_op.empty else "")
-                cost_xe = st.number_input("Giá thuê xe trọn gói chuyến (VND) *", min_value=0, value=int(current_op["Chi Phí Xe (VND)"].values[0]) if not current_op.empty else 2000000)
-            with col_o2:
-                st.markdown("##### 🏨 Chi Phí Dịch Vụ Tour & Nhân Sự")
-                hdv = st.text_input("Hướng Dẫn Viên", value=str(current_op["Hướng Dẫn Viên"].values[0]) if not current_op.empty else "")
-                cost_hdv = st.number_input("Tiền công tác phí HDV (VND) *", min_value=0, value=int(current_op["Chi Phí HDV (VND)"].values[0]) if not current_op.empty else 800000)
-                n_hang = st.text_input("Nhà hàng ăn uống", value=str(current_op["Nhà Hàng"].values[0]) if not current_op.empty else "")
-                k_san = st.text_input("Khách sạn / Nhà Tàu", value=str(current_op["Khách Sạn"].values[0]) if not current_op.empty else "")
-                v_tq = st.text_input("Vé thắng cảnh / Điểm tham quan", value=str(current_op["Vé Tham Quan"].values[0]) if not current_op.empty else "")
-                cost_tour_pax = st.number_input("Chi phí dịch vụ tính trên ĐẦU NGƯỜI", min_value=0, value=int(current_op["Chi Phí Tour/Khách (VND)"].values[0]) if not current_op.empty else 600000)
-            ghi_chu_ops = st.text_area("Yêu cầu đặc biệt cho nhà xe/hướng dẫn viên", value=str(current_op["Ghi Chú"].values[0]) if not current_op.empty else "")
+    with st.form("ops_form"):
+        col_o1, col_o2 = st.columns(2)
+        with col_o1:
+            ma_xe_ops = st.text_input("Nhập Mã Chuyến Xe Ghép điều phối *", value="XE-7C-HUNG")
+            tai_xe_ten = st.text_input("Họ tên Tài xế điều hành", value="Nguyễn Văn Thanh")
+            bien_so_xe = st.text_input("Biển số xe chạy tuyến", value="86A-123.45")
+        with col_o2:
+            hdv_ten = st.text_input("Hướng Dẫn Viên đi cùng đoàn (Nếu có)", value="Xuân Lâm")
+            note_xe = st.text_input("Lưu ý đặc biệt cho nhà xe", value="Đón đúng giờ")
             
-            if st.form_submit_button("💾 Cập Nhật Bảng Điều Hành Tour"):
-                st.session_state.tour_ops = st.session_state.tour_ops[st.session_state.tour_ops["Mã Xe Ghép"] != chuyen_chon]
-                new_op_data = {
-                    "Mã Xe Ghép": chuyen_chon, "Tài Xế": tai_xe, "Biển Số": bien_so, "Chi Phí Xe (VND)": cost_xe,
-                    "Hướng Dẫn Viên": hdv, "Chi Phí HDV (VND)": cost_hdv, "Nhà Hàng": n_hang, "Khách Sạn": k_san,
-                    "Vé Tham Quan": v_tq, "Chi Phí Tour/Khách (VND)": cost_tour_pax, "Ghi Chú": ghi_chu_ops
-                }
-                st.session_state.tour_ops = pd.concat([st.session_state.tour_ops, pd.DataFrame([new_op_data])], ignore_index=True)
-                st.success(f"Cập nhật thành công thông tin Ops cho tuyến xe {chuyen_chon}!")
-                st.rerun()
+        if st.form_submit_button("💾 Khai Thác Điều Xe"):
+            st.session_state.tour_ops = st.session_state.tour_ops[st.session_state.tour_ops["Mã Xe Ghép"] != ma_xe_ops]
+            new_ops = {
+                "Mã Xe Ghép": ma_xe_ops, "Tài Xế": tai_xe_ten, "Biển Số": bien_so_xe, "Hướng Dẫn Viên": hdv_ten, "Lưu Ý Xe": note_xe
+            }
+            st.session_state.tour_ops = pd.concat([st.session_state.tour_ops, pd.DataFrame([new_ops])], ignore_index=True)
+            save_system_data(st.session_state.bookings, st.session_state.tour_ops)
+            st.success(f"✔️ Cập nhật thành công đội ngũ vận hành cho chuyến {ma_xe_ops}!")
+            st.rerun()
 
-        st.markdown("### 📋 Danh sách điều hành các tuyến xe")
-        st.dataframe(st.session_state.tour_ops, use_container_width=True)
-    else:
-        st.warning("Hiện tại chưa có Booking nào được gán mã xe ghép.")
+    st.markdown("### 📋 Danh bạ trạng thái điều phối xe Ops hiện tại")
+    st.dataframe(st.session_state.tour_ops, use_container_width=True)
 
 # ==========================================
-# --- PHÂN HỆ 3: QUYẾT TOÁN HOA HỒNG ---
+# --- PHÂN HỆ 3: KẾ TOÁN THU HỘ & CỌC KHÁCH ---
 # ==========================================
-elif menu == "💵 3. Quyết Toán Hoa Hồng Sales & Đại Lý":
-    st.subheader("💵 Phân hệ kiểm soát và tính toán hoa hồng thực chi")
+elif menu == "💵 3. Kế Toán Thu Hộ & Cọc Khách":
+    st.subheader("💵 Quản lý dòng tiền thu hộ từ Tài xế & Hướng dẫn viên")
     df_bk = st.session_state.bookings.copy()
-    df_bk["Tổng Doanh Thu"] = df_bk["Số Khách"] * df_bk["Giá Bán/Khách"]
-    df_bk["Tổng Hoa Hồng"] = df_bk["Số Khách"] * df_bk["Mức HH/Khách"]
     
-    st.markdown("##### 🔍 Chi tiết nghĩa vụ hoa hồng theo phương thức xử lý")
-    col_t1, col_t2 = st.columns(2)
-    
-    with col_t1:
-        st.info("🔹 Loại 1: Công ty chi trả sau")
-        df_tra_sau = df_bk[df_bk["Hình Thức HH"] == "Công ty chi trả sau"]
-        if not df_tra_sau.empty:
-            st.dataframe(df_tra_sau[["Mã BK", "Người Bán/Đối Tác", "Số Khách", "Tổng Hoa Hồng", "Trạng Thái Thu"]], use_container_width=True)
-            st.metric("Tổng Hoa Hồng Cần Trả Sau", f"{df_tra_sau['Tổng Hoa Hồng'].sum():,} VND")
+    c_t1, c_t2 = st.columns(2)
+    with c_t1:
+        st.info("🚎 Dòng tiền Tài xế chịu trách nhiệm thu (TX thu khách)")
+        df_tx = df_bk[df_bk["Phương Thức TT"] == "TX thu khách"]
+        if not df_tx.empty:
+            st.dataframe(df_tx[["Mã BK", "Tên Khách", "Doanh Thu VND", "Nhà Cung Cấp"]], use_container_width=True)
+            st.metric("Tổng Quỹ Tài Xế Cần Nộp Về", f"{df_tx['Doanh Thu VND'].sum():,} VND")
         else:
-            st.caption("Chưa có dữ liệu hoa hồng chi trả sau.")
-        
-    with col_t2:
-        st.success("🔹 Loại 2: Trừ thẳng khi thanh toán (Thu hộ)")
-        df_tru_thang = df_bk[df_bk["Hình Thức HH"] == "Trừ thẳng khi thanh toán (Thu hộ)"]
-        if not df_tru_thang.empty:
-            st.dataframe(df_tru_thang[["Mã BK", "Người Bán/Đối Tác", "Số Khách", "Tổng Hoa Hồng", "Tổng Doanh Thu"]], use_container_width=True)
-            st.metric("Tổng Số Tiền Thực Thu Hộ", f"{(df_tru_thang['Tổng Doanh Thu'].sum() - df_tru_thang['Tổng Hoa Hồng'].sum()):,} VND")
+            st.caption("Không có dòng tiền thu hộ của tài xế.")
+            
+    with c_t2:
+        st.success("👨‍💼 Dòng tiền Hướng dẫn viên chịu trách nhiệm thu (HDV thu khách)")
+        df_hdv = df_bk[df_bk["Phương Thức TT"] == "HDV thu khách"]
+        if not df_hdv.empty:
+            st.dataframe(df_hdv[["Mã BK", "Tên Khách", "Doanh Thu VND", "Lưu Ý"]], use_container_width=True)
+            st.metric("Tổng Quỹ HDV Cần Nộp Về", f"{df_hdv['Doanh Thu VND'].sum():,} VND")
         else:
-            st.caption("Chưa có dữ liệu đại lý trừ thẳng hoa hồng.")
+            st.caption("Không có dòng tiền thu hộ của HDV.")
 
 # ==========================================
-# --- PHÂN HỆ 4: BÁO CÁO DOANH THU & LỢI NHUẬN ---
-# ==========================================
-elif menu == "📊 4. Báo Cáo Doanh Thu Lợi Nhuận Đối Tác":
-    st.subheader("📊 Báo cáo kết quả kinh doanh gộp (P&L) theo từng mã xe ghép")
-    list_chuyen = list(set(st.session_state.bookings["Mã Xe Ghép"].tolist()))
+# --- PHÂN HỆ 4: TRUNG TÂM BÁO CÁO TÀI CHÍNH ---
+# ==========================================elif menu == "📊 4. Trung Tâm Báo Cáo Tài Chính (P&L)":
+    st.subheader("📊 Trung Tâm Phân Tích Kết Quả Kinh Doanh & Hiệu Suất Tài Chính")
     
-    for chuyen in list_chuyen:
-        if pd.isna(chuyen) or chuyen == "Chưa xếp xe": 
-            continue
-            
-        st.markdown(f"#### 🚎 BÁO CÁO TOÁN CHUYẾN: {chuyen}")
-        df_bk_chuyen = st.session_state.bookings[st.session_state.bookings["Mã Xe Ghép"] == chuyen]
-        df_ops_chuyen = st.session_state.tour_ops[st.session_state.tour_ops["Mã Xe Ghép"] == chuyen]
-        
-        tong_pax = df_bk_chuyen["Số Khách"].sum()
-        revenue = (df_bk_chuyen["Số Khách"] * df_bk_chuyen["Giá Bán/Khách"]).sum()
-        total_hh = (df_bk_chuyen["Số Khách"] * df_bk_chuyen["Mức HH/Khách"]).sum()
-        
-        if not df_ops_chuyen.empty:
-            cost_xe_co_dinh = int(df_ops_chuyen["Chi Phí Xe (VND)"].values[0]) + int(df_ops_chuyen["Chi Phí HDV (VND)"].values[0])
-            cost_bien_doi_pax = tong_pax * int(df_ops_chuyen["Chi Phí Tour/Khách (VND)"].values[0])
-            total_ops_cost = cost_xe_co_dinh + cost_bien_doi_pax
-            
-            st.markdown(f"""
-            <div style="border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9; border-radius: 5px; margin-bottom: 15px;">
-                <p style='margin: 0; color: #333;'><b>Tài xế:</b> {df_ops_chuyen['Tài Xế'].values[0]} ({df_ops_chuyen['Biển Số'].values[0]}) | <b>HDV:</b> {df_ops_chuyen['Hướng Dẫn Viên'].values[0]}</p>
-                <p style='margin: 5px 0 0 0; color: #333;'><b>Nhà hàng:</b> {df_ops_chuyen['Nhà Hàng'].values[0]} | <b>Khách sạn:</b> {df_ops_chuyen['Khách Sạn'].values[0]} | <b>Ghi chú:</b> {df_ops_chuyen['Ghi Chú'].values[0]}</p>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            total_ops_cost = 0
-            st.warning(f"Chuyến xe {chuyen} chưa được khai báo chi phí vận hành bên Phân hệ 2.")
-            
-        profit = revenue - total_hh - total_ops_cost
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Tổng thu khách lẻ (Gross)", f"{revenue:,} VND")
-        c2.metric("Chi phí Hoa hồng", f"{total_hh:,} VND")
-        c3.metric("Chi phí Vận hành (Ops)", f"{total_ops_cost:,} VND")
-        c4.metric("Lợi nhuận gộp chuyến", f"{profit:,} VND", delta=f"{((profit/revenue)*100) if revenue > 0 else 0:.1f}% Tỷ suất")
-        st.markdown("---")
-
-# ==========================================
-# --- PHÂN HỆ 5: QUẢN LÝ CÔNG NỢ NHÀ CUNG CẤP ---
-# ==========================================
-elif menu == "🏦 5. Quản Lý Công Nợ Nhà Cung Cấp":
-    st.subheader("🏦 Bảng phân rã & Đối soát công nợ các dịch vụ cấu thành Tour")
-    df_ops = st.session_state.tour_ops.copy()
+    # Tạo bản sao dữ liệu tránh ảnh hưởng đến state gốc
+    df_b = st.session_state.bookings.copy()
     
-    if not df_ops.empty:
-        records_debt = []
-        for index, row in df_ops.iterrows():
-            chuyen = row["Mã Xe Ghép"]
-            df_bk_chuyen = st.session_state.bookings[st.session_state.bookings["Mã Xe Ghép"] == chuyen]
-            tong_pax = df_bk_chuyen["Số Khách"].sum()
-            
-            if row["Tài Xế"]:
-                records_debt.append({"Nhà Cung Cấp": f"Đội xe {row['Tài Xế']} ({row['Biển Số']})", "Nội Dung": f"Thuê xe tuyến {chuyen}", "Số Tiền Phải Trả": row["Chi Phí Xe (VND)"], "Trạng Thái": "Chưa thanh toán"})
-            if row["Hướng Dẫn Viên"]:
-                records_debt.append({"Nhà Cung Cấp": f"HDV {row['Hướng Dẫn Viên']}", "Nội Dung": f"Công tác phí {chuyen}", "Số Tiền Phải Trả": row["Chi Phí HDV (VND)"], "Trạng Thái": "Chưa thanh toán"})
-            if row["Nhà Hàng"]:
-                records_debt.append({"Nhà Cung Cấp": row["Nhà Hàng"], "Nội Dung": f"Suất ăn ghép xe {chuyen}", "Số Tiền Phải Trả": row["Chi Phí Tour/Khách (VND)"] * tong_pax, "Trạng Thái": "Chưa thanh toán"})
-                
-        if records_debt:
-            df_debt_final = pd.DataFrame(records_debt)
-            st.dataframe(df_debt_final, use_container_width=True)
-            st.metric("Tổng Công Nợ Phải Trả Nhà Cung Cấp (Tạm tính)", f"{df_debt_final['Số Tiền Phải Trả'].sum():,} VND")
+    # Chuẩn hóa định dạng ngày tháng để bộ lọc thời gian hoạt động chính xác
+    df_b["Ngày"] = pd.to_datetime(df_b["Ngày"]).dt.date
+    df_b["Tháng"] = pd.to_datetime(df_b["Ngày"]).dt.to_period("M").astype(str)
+    df_b["Năm"] = pd.to_datetime(df_b["Ngày"]).dt.year
+    
+    # --- BỘ LỌC THỜI GIAN THEO ĐÚNG TIÊU CHUẨN KẾ TOÁN ---
+    st.markdown("##### 📅 Cấu hình bộ lọc thời gian đối soát")
+    filter_mode = st.radio("Lọc báo cáo tài chính theo:", ["Khoảng Ngày cụ thể", "Tháng", "Năm"], horizontal=True)
+    
+    if filter_mode == "Khoảng Ngày cụ thể":
+        d1, d2 = st.columns(2)
+        with d1: 
+            start = st.date_input("Từ ngày:", datetime.date(2026, 7, 1))
+        with d2: 
+            end = st.date_input("Đến ngày:", datetime.date(2026, 12, 31))
+        df_filtered = df_b[(df_b["Ngày"] >= start) & (df_b["Ngày"] <= end)]
+        
+    elif filter_mode == "Tháng":
+        m_list = sorted(list(df_b["Tháng"].unique()))
+        m_select = st.selectbox("Chọn tháng tài chính:", m_list if m_list else [str(datetime.date.today())[:7]])
+        df_filtered = df_b[df_b["Tháng"] == m_select]
+        
+    elif filter_mode == "Năm":
+        y_list = sorted(list(df_b["Năm"].unique()))
+        y_select = st.selectbox("Chọn năm tài chính:", y_list if y_list else [datetime.date.today().year])
+        df_filtered = df_b[df_b["Năm"] == y_select]
+        
+    # --- TÍNH TOÁN CÁC CHỈ SỐ THEO ĐÚNG CỘT DỮ LIỆU THỰC TẾ ---
+    # Đồng bộ hóa công thức tính dựa trên Doanh Thu VND, Giá Vốn NCC và các khoản hoa hồng trích chi
+    df_filtered["Lợi Nhuận Gộp Thực"] = df_filtered["Doanh Thu VND"] - df_filtered["Giá Vốn NCC"]
+    
+    # Tính tổng hoa hồng trích thưởng (bao gồm cả mức 5% và 10% nếu có phát sinh)
+    df_filtered["Tổng Hoa Hồng Chi"] = df_filtered["HH sale 5%"].fillna(0) + df_filtered["HH sale 10%"].fillna(0)
+    df_filtered["Lợi Nhuận Thuần Thực"] = df_filtered["Lợi Nhuận Gộp Thực"] - df_filtered["Tổng Hoa Hồng Chi"]
+    
+    total_rev = df_filtered["Doanh Thu VND"].sum()
+    total_cost = df_filtered["Giá Vốn NCC"].sum()
+    total_g_profit = df_filtered["Lợi Nhuận Gộp Thực"].sum()
+    total_com = df_filtered["Tổng Hoa Hồng Chi"].sum()
+    total_net_profit = df_filtered["Lợi Nhuận Thuần Thực"].sum()
+    
+    # Thiết lập các Tab báo cáo chi tiết trực quan
+    t1, t2, t3 = st.tabs(["🏛️ Báo Cáo Lãi Lỗ Doanh Nghiệp (P&L)", "🚎 Doanh Thu - Chi Phí Tour Chi Tiết", "💵 Kiểm Soát Hoa Hồng Sales"])
+    
+    with t1:
+        st.markdown("#### Báo cáo Lợi Nhuận Doanh Nghiệp")
+        mc1, mc2, mc3, mc4 = st.columns(4)
+        mc1.metric("1. TỔNG DOANH THU (GROSS)", f"{total_rev:,.0f} VND")
+        mc2.metric("2. CHI PHÍ GIÁ VỐN NCC", f"{total_cost:,.0f} VND")
+        mc3.metric("3. TỔNG CHI HOA HỒNG", f"{total_com:,.0f} VND")
+        mc4.metric("4. LỢI NHUẬN THUẦN", f"{total_net_profit:,.0f} VND", delta=f"{((total_net_profit/total_rev)*100) if total_rev > 0 else 0:.1f}% ROS")
+        
+        p_and_l = pd.DataFrame([
+            {"Khoản mục kế toán": "A. TỔNG DOANH THU HOẠT ĐỘNG KINH DOANH", "Số tiền (VND)": total_rev},
+            {"Khoản mục kế toán": "B. CHI PHÍ GIÁ VỐN DỊCH VỤ (Trả Nhà xe, Vé, Land tour)", "Số tiền (VND)": total_cost},
+            {"Khoản mục kế toán": "C. LỢI NHUẬN GỘP KINH DOANH (A - B)", "Số tiền (VND)": total_g_profit},
+            {"Khoản mục kế toán": "D. CHI PHÍ BÁN HÀNG (Hoa hồng trích thưởng cho Sales)", "Số tiền (VND)": total_com},
+            {"Khoản mục kế toán": "E. LỢI NHUẬN THUẦN TRƯỚC THUẾ (C - D)", "Số tiền (VND)": total_net_profit}
+        ])
+        st.table(p_and_l)
+        
+    with t2:
+        st.markdown("#### Bảng Hiệu Suất Kinh Doanh Từng Tuyến Tour / Mã Chuyến Xe Ghép")
+        if not df_filtered.empty:
+            # Nhóm dữ liệu theo Tuyến để phân tích hiệu năng lãi/lỗ từng dòng tour
+            df_tour_perf = df_filtered.groupby("TUYẾN").agg({
+                "SỐ PAX": "sum",
+                "Doanh Thu VND": "sum",
+                "Giá Vốn NCC": "sum",
+                "Lợi Nhuận Gộp Thực": "sum"
+            }).reset_index().rename(columns={
+                "TUYẾN": "Tuyến Đi / Tên Dịch Vụ Tour",
+                "SỐ PAX": "Tổng Số Khách (Pax)",
+                "Doanh Thu VND": "Tổng Doanh Thu (VND)",
+                "Giá Vốn NCC": "Tổng Chi Phí NCC (VND)",
+                "Lợi Nhuận Gộp Thực": "Lợi Nhuận Gộp Tour (VND)"
+            })
+            st.dataframe(df_tour_perf, use_container_width=True)
         else:
-            st.info("Chưa phát sinh công nợ phải trả nhà cung cấp.")
-    else:
-        st.info("Chưa có dữ liệu vận hành từ điều hành Tour (Ops) để tổng hợp công nợ.")
+            st.info("Không có dữ liệu điều hành trong khoảng thời gian được lọc.")
+            
+    with t3:
+        st.markdown("#### Báo Cáo Trích Chi Hoa Hồng Sales & Đại Lý Đối Tác")
+        if not df_filtered.empty:
+            # Ưu tiên lấy cột Nhân viên bán chính (SALES 01) xử lý số liệu hoa hồng
+            df_sales_perf = df_filtered.groupby("SALES 01").agg({
+                "CODE": "count",
+                "SỐ PAX": "sum",
+                "Doanh Thu VND": "sum",
+                "Tổng Hoa Hồng Chi": "sum"
+            }).reset_index().rename(columns={
+                "SALES 01": "Nhân Viên Sales / Đối Tác",
+                "CODE": "Số Đơn Hàng Chốt",
+                "SỐ PAX": "Tổng Số Pax Mang Về",
+                "Doanh Thu VND": "Doanh Số Mang Về (VND)",
+                "Tổng Hoa Hồng Chi": "Tổng Hoa Hồng Nhận Kỳ Này (VND)"
+            })
+            st.dataframe(df_sales_perf, use_container_width=True)
+            st.metric("Tổng Chi Phí Trích Chi Hoa Hồng Kỳ Này", f"{total_com:,.0f} VND")
+        else:
+            st.info("Chưa phát sinh dữ liệu trích chi hoa hồng trong kỳ đối soát này.")
