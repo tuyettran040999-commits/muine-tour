@@ -3,242 +3,310 @@ import pandas as pd
 import datetime
 import os
 
-st.set_page_config(page_title="Mũi Né Express - Hệ Thống Số Hóa Vận Hành", layout="wide")
-st.title("🏛️ HỆ THỐNG ĐIỀU HÀNH & KẾ TOÁN TOUR MŨI NÉ EXPRESS")
-st.caption("Giải pháp số hóa vận hành tích hợp hệ thống Core Dataset & Luồng xử lý dữ liệu tự động BPM")
+st.set_page_config(page_title="Hệ Thống Điều Hành & Kế Toán Tour Toàn Diện", layout="wide")
+st.title("🏛️ HỆ THỐNG ĐIỀU HÀNH & KẾ TOÁN TOUR CÔNG TY TOÀN DIỆN")
+st.caption("Giao diện Master Log Đám Mây: Kết hợp Nhập mới ➔ Sửa đổi Tour đã hoàn thành ➔ Đồng bộ 6 Phân hệ tài chính")
 
-# --- ĐƯỜNG DẪN DATABASE LƯU TRỮ TRÊN ĐÁM MÂY CLOUD ---
-DATA_FILE = "master_data_tour.csv"
+# --- FILE CƠ SỞ DỮ LIỆU CỐ ĐỊNH TRÊN MÁY CHỦ CLOUD ---
+DATABASE_FILE = "master_data_tour.csv"
 
-# --- HÀM XỬ LÝ VÀ CHUẨN HÓA DỮ LIỆU LOG GỐC DOANH NGHIỆP ---
-@st.cache_data
-def load_and_clean_master_log():
-    if not os.path.exists(DATA_FILE):
-        return pd.DataFrame()
-    try:
-        # Đọc dữ liệu gốc, dọn dẹp khoảng trắng thừa và lỗi font chữ tiếng Việt
-        df = pd.read_csv(DATA_FILE, encoding='utf-8-sig')
-        
-        # Bóc tách và giữ lại mảng Nhật ký điều hành thực tế (Bỏ các dòng tổng gộp của Excel cũ)
-        df = df[df["NGÀY"].notna()]
-        df = df[df["CODE"] != "CODE"]
-        df = df[~df["NGÀY"].str.contains("Total|Tổng|Chỉ tiêu", case=False, na=False)]
-        
-        # Đồng bộ và ép kiểu dữ liệu an toàn phục vụ các hàm kế toán tính toán
-        df["NGÀY_DT"] = pd.to_datetime(df["NGÀY"], errors='coerce').dt.date
-        df = df[df["NGÀY_DT"].notna()]
-        
-        df["DOANH THU VND"] = pd.to_numeric(df["DOANH THU VND"], errors='coerce').fillna(0)
-        df["GIÁ VỐN NCC"] = pd.to_numeric(df["GIÁ VỐN NCC"], errors='coerce').fillna(0)
-        df["LỢI NHUẬN GỘP"] = pd.to_numeric(df["LỢI NHUẬN GỘP"], errors='coerce').fillna(0)
-        df["HH sale 5%"] = pd.to_numeric(df["HH sale 5%"], errors='coerce').fillna(0)
-        df["HH sale 10%"] = pd.to_numeric(df["HH sale 10%"], errors='coerce').fillna(0)
-        df["CHI PHÍ"] = pd.to_numeric(df["CHI PHÍ"], errors='coerce').fillna(0)
-        df["SỐ PAX"] = pd.to_numeric(df["SỐ PAX"], errors='coerce').fillna(1)
-        
-        # Tự động đồng bộ hóa các trường thông tin trống để tránh lỗi giao diện
-        df["TÀI XẾ"] = df["TÀI XẾ"].fillna("Chưa điều xe")
-        df["BIỂN SỐ"] = df["BIỂN SỐ"].fillna("Chưa có")
-        df["HDV"] = df["HDV"].fillna("Không có")
-        df["NCC"] = df["NCC"].fillna("Nội bộ")
-        df["SALES 01"] = df["SALES 01"].fillna("Văn phòng")
-        df["PHƯƠNG THỨC TT"] = df["PHƯƠNG THỨC TT"].fillna("Chưa xác định")
-        
-        return df
-    except Exception as e:
-        st.error(f"Lỗi phân rã cấu trúc file Master: {e}")
-        return pd.DataFrame()
+# --- HÀM TỰ ĐỘNG NẠP VÀ CHUẨN HÓA DỮ LIỆU THỰC TẾ ---
+def load_database():
+    if os.path.exists(DATABASE_FILE):
+        try:
+            df = pd.read_csv(DATABASE_FILE, encoding='utf-8-sig')
+            df = df[df["NGÀY"].notna()]
+            df = df[df["CODE"] != "CODE"]
+            df["NGÀY"] = pd.to_datetime(df["NGÀY"], errors='coerce').dt.date
+            df = df[df["NGÀY"].notna()]
+            
+            # Chuẩn hóa số liệu tài chính để tránh lỗi ma trận trống
+            df["DOANH THU VND"] = pd.to_numeric(df["DOANH THU VND"], errors='coerce').fillna(0)
+            df["GIÁ VỐN NCC"] = pd.to_numeric(df["GIÁ VỐN NCC"], errors='coerce').fillna(0)
+            df["LỢI NHUẬN GỘP"] = pd.to_numeric(df["LỢI NHUẬN GỘP"], errors='coerce').fillna(0)
+            df["HH sale 5%"] = pd.to_numeric(df["HH sale 5%"], errors='coerce').fillna(0)
+            df["HH sale 10%"] = pd.to_numeric(df["HH sale 10%"], errors='coerce').fillna(0)
+            df["SỐ PAX"] = pd.to_numeric(df["SỐ PAX"], errors='coerce').fillna(1)
+            return df
+        except Exception as e:
+            st.error(f"Lỗi đọc file dữ liệu: {e}")
+            return pd.DataFrame()
+    else:
+        # Khởi tạo khung cấu trúc cột chuẩn khớp 100% với tệp tin Nhật ký Excel của bạn
+        df_empty = pd.DataFrame(columns=[
+            "CODE", "NGÀY", "GIỜ", "DỊCH VỤ", "LOẠI", "TUYẾN", "XE", "LƯU Ý XE", 
+            "BIỂN SỐ", "TÀI XẾ", "HDV", "SỐ PAX", "ĐỐI TÁC", "VAT", "TÊN KHÁCH", 
+            "ĐIỂM ĐÓN", "Đ/C ĐÓN", "ĐIỂM TRẢ", "Đ/C TRẢ", "DOANH THU USD", "DOANH THU VND", 
+            "PHƯƠNG THỨC TT", "Ngày TT", "CỌC", "TX THU", "GIÁ VỐN NCC", "NCC", 
+            "SALES 01", "SALES 02", "LƯU Ý", "CHI PHÍ", "LỢI NHUẬN GỘP", "HH sale 5%", "HH sale 10%"
+        ])
+        df_empty.to_csv(DATABASE_FILE, index=False, encoding='utf-8-sig')
+        return df_empty
 
-# Tải dữ liệu vào bộ nhớ đệm an toàn hệ thống
-df_master = load_and_clean_master_log()
+# Nạp dữ liệu vào session state để quản lý biến động dữ liệu toàn cục
+if 'master_df' not in st.session_state:
+    st.session_state.master_df = load_database()
 
-# --- SIDEBAR MENU: ĐỒNG BỘ 100% THEO CHUẨN 6 NỘI DUNG GIẢI PHÁP ---
-menu = st.sidebar.radio("TRUNG TÂM SỐ HÓA VẬN HÀNH (BASE BPM)", [
-    "📥 1. Tiếp Nhận Booking (Sales Form)",
-    "🎯 2. Điều Phối Xe & Tài Xế (Ops)",
-    "💵 3. Quyết Toán Hoa Hồng Sales",
+# --- SIDEBAR MENU ĐIỀU HƯỚNG ĐẦY ĐỦ 6 PHÂN HỆ KHÔNG THIẾU PHẦN NÀO ---
+menu = st.sidebar.radio("PHÂN HỆ CHỨC NĂNG HỆ THỐNG", [
+    "📥 1. Form Nhập Nhật Ký Mới",
+    "🎯 2. Điều Hành Xe & Chỉnh Sửa Tour (Ops)",
+    "💵 3. Quyết Toán Hoa Hồng Sales & Đại Lý",
     "📊 4. Trung Tâm Báo Cáo Tài Chính (P&L)",
-    "🏦 5. Quản Lý Giá Vốn & Công Nợ NCC",
-    "🗂️ 6. Bảng Tra Cứu Dữ Liệu Toàn Diện"
+    "🏦 5. Quản Lý Công Nợ Nhà Cung Cấp",
+    "🗂️ 6. Bảng Tổng Hợp Master Log Toàn Diện"
 ])
 
-if df_master.empty:
-    st.error(f"⚠️ Hệ thống trống dữ liệu! Hãy đảm bảo file `{DATA_FILE}` trên GitHub chứa đầy đủ nội dung dòng nhật ký thực tế.")
-else:
-    # Thiết lập bộ lọc thời gian nâng cao dùng chung cho toàn bộ các phân hệ báo cáo
-    df_master["Tháng"] = pd.to_datetime(df_master["NGÀY_DT"]).dt.to_period("M").astype(str)
-    df_master["Năm"] = pd.to_datetime(df_master["NGÀY_DT"]).dt.year
+# Kiểm tra dữ liệu thô toàn hệ thống
+df_active = st.session_state.master_df.copy()
+
+# Đồng bộ bộ lọc thời gian toàn cục ngay trên Sidebar để các phân hệ báo cáo tự nhảy số
+if not df_active.empty:
+    df_active["NGÀY"] = pd.to_datetime(df_active["NGÀY"], errors='coerce').dt.date
+    df_active["Tháng"] = pd.to_datetime(df_active["NGÀY"], errors='coerce').dt.to_period("M").astype(str)
+    df_active["Năm"] = pd.to_datetime(df_active["NGÀY"], errors='coerce').dt.year
     
     st.sidebar.markdown("---")
-    st.sidebar.markdown("##### 🔍 Bộ Lọc Kỳ Kế Toán")
-    f_type = st.sidebar.radio("Lọc số liệu theo:", ["Khoảng Ngày tự chọn", "Tổng Hợp Tháng", "Tổng Hợp Năm"])
+    st.sidebar.markdown("##### 📅 Lọc Dữ Liệu Thời Gian")
+    f_mode = st.sidebar.radio("Xem báo cáo theo:", ["Toàn thời gian", "Khoảng Ngày cụ thể", "Tháng", "Năm"])
     
-    if f_type == "Khoảng Ngày tự chọn":
-        s_d = st.sidebar.date_input("Từ ngày:", datetime.date(2026, 7, 1))
-        e_d = st.sidebar.date_input("Đến ngày:", datetime.date(2026, 8, 31))
-        df_active = df_master[(df_master["NGÀY_DT"] >= s_d) & (df_master["NGÀY_DT"] <= e_d)]
-    elif f_type == "Tổng Hợp Tháng":
-        m_sel = st.sidebar.selectbox("Chọn tháng báo cáo:", sorted(list(df_master["Tháng"].unique())))
-        df_active = df_master[df_master["Tháng"] == m_sel]
-    elif f_type == "Tổng Hợp Năm":
-        y_sel = st.sidebar.selectbox("Chọn năm báo cáo:", sorted(list(df_master["Năm"].unique())))
-        df_active = df_master[df_master["Năm"] == y_sel]
+    if f_mode == "Khoảng Ngày cụ thể":
+        col_d1, col_d2 = st.sidebar.columns(2)
+        with col_d1: start_d = st.date_input("Từ ngày:", datetime.date(2026, 7, 1))
+        with col_d2: end_d = st.date_input("Đến ngày:", datetime.date(2026, 12, 31))
+        df_active = df_active[(df_active["NGÀY"] >= start_d) & (df_active["NGÀY"] <= end_d)]
+    elif f_mode == "Tháng":
+        m_list = sorted(list(df_active["Tháng"].dropna().unique()))
+        m_select = st.sidebar.selectbox("Chọn tháng tài chính:", m_list if m_list else [str(datetime.date.today())[:7]])
+        df_active = df_active[df_active["Tháng"] == m_select]
+    elif f_mode == "Năm":
+        y_list = sorted(list(df_active["Năm"].dropna().unique()))
+        y_select = st.sidebar.selectbox("Chọn năm tài chính:", y_list if y_list else [datetime.date.today().year])
+        df_active = df_active[df_active["Năm"] == y_select]
 
-    # ==========================================
-    # --- PHÂN HỆ 1: TIẾP NHẬN BOOKING (SALES FORM) ---
-    # ==========================================
-    if menu == "📥 1. Tiếp Nhận Booking (Sales Form)":
-        st.subheader("📥 Tiếp Nhận Yêu Cầu Đặt Chỗ - Cấp Mã Đơn Tự Động")
-        
-        with st.form("new_booking_form", clear_on_submit=True):
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.markdown("##### 📝 1. Thông Tin Tuyến Đi")
-                in_code = st.text_input("Mã CODE Đơn Hàng (Cấp tự động) *", value=f"MTG-{datetime.date.today().strftime('%y%m')}{len(st.session_state.get('master_df', df_master))+1:03d}")
-                in_ngay = st.date_input("NGÀY khởi hành *", datetime.date(2026, 7, 1))
-                in_gio = st.text_input("GIỜ đón khách", value="04:30:00")
-                in_dichvu = st.selectbox("DỊCH VỤ CỐ ĐỊNH", ["Tour", "Transfer", "Vé", "Events", "Hotel"])
-                in_tuyen = st.text_input("TUYẾN ĐƯỜNG / TÊN TOUR *")
-            with col2:
-                st.markdown("#####    2. Điều Phối Dự Kiến")
-                in_xe = st.text_input("Loại xe yêu cầu (Ví dụ: 4, 7, 16, Jeep)")
-                in_pax = st.number_input("SỐ PAX (Số lượng khách) *", min_value=1, step=1, value=2)
-                in_khach = st.text_input("TÊN KHÁCH HÀNG / ĐOÀN KHÁCH")
-                in_don = st.text_input("ĐIỂM ĐÓN KHÁCH")
-                in_tra = st.text_input("ĐIỂM TRẢ KHÁCH")
-            with col3:
-                st.markdown("##### 💰 3. Kế Toán Tài Chính")
-                in_rev = st.number_input("DOANH THU VND *", min_value=0, value=0, step=100000)
-                in_cost = st.number_input("GIÁ VỐN NCC (Chi phí gốc) *", min_value=0, value=0, step=100000)
-                in_sales = st.text_input("NHÂN VIÊN SALES 01 phụ trách *", value="Như")
-                in_doitac = st.text_input("ĐỐI TÁC / ĐẠI LÝ GỬI")
-                in_tt = st.text_input("PHƯƠNG THỨC TT (TX thu / HDV thu / Công nợ)")
+# ==========================================
+# --- PHÂN HỆ 1: FORM NHẬP NHẬT KÝ ĐIỀU HÀNH MỚI ---
+# ==========================================
+if menu == "📥 1. Form Nhập Nhật Ký Mới":
+    st.subheader("📥 Tiếp nhận thông tin điều hành & Kết chuyển tài chính")
+    with st.form("master_input_form", clear_on_submit=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("##### 📅 Tuyến Đi & Thời Gian")
+            f_code = st.text_input("Mã CODE đơn hàng (Ví dụ: MTG-2607001) *")
+            f_ngay = st.date_input("NGÀY khởi hành *", datetime.date(2026, 7, 1))
+            f_gio = st.text_input("GIỜ đón khách", value="04:30:00")
+            f_dich_vu = st.selectbox("DỊCH VỤ *", ["Tour", "Transfer", "Vé", "Events", "Hotel"])
+            f_loai = st.text_input("LOẠI (Ví dụ: Đi tour, Drop-off, Ind.)")
+            f_tuyen = st.text_input("TUYẾN ĐƯỜNG / TÊN TOUR KHỞI HÀNH *")
+            f_so_pax = st.number_input("SỐ PAX (Số khách) *", min_value=1, step=1, value=2)
+            f_ten_khach = st.text_input("TÊN KHÁCH HÀNG / ĐOÀN KHÁCH")
+
+        with col2:
+            st.markdown("##### 🚎 Điều Phối Xe & Hành Trình (Ops)")
+            f_loai_xe = st.text_input("XE (Ví dụ: 4, 7, 16, Jeep)")
+            f_luu_y_xe = st.text_input("LƯU Ý XE (Ví dụ: rộng, ghế trẻ em)")
+            f_bien_so = st.text_input("BIỂN SỐ XE")
+            f_tai_xe = st.text_input("HỌ TÊN TÀI XẾ")
+            f_hdv = st.text_input("HƯỚNG DẪN VIÊN")
+            f_diem_don = st.text_input("ĐIỂM ĐÓN (Mũi Né / Tiến Thành / SGN)")
+            f_diem_tra = st.text_input("ĐIỂM TRẢ")
+            f_ncc = st.text_input("NHÀ CUNG CẤP DỊCH VỤ (NCC)")
+
+        with col3:
+            st.markdown("##### 💰 Doanh Thu, Giá Vốn & Sales")
+            f_revenue = st.number_input("DOANH THU VND *", min_value=0, value=0, step=100000)
+            f_usd = st.number_input("DOANH THU USD (Nếu có)", min_value=0.0, value=0.0, step=10.0)
+            f_cost = st.number_input("GIÁ VỐN NCC *", min_value=0, value=0, step=100000)
+            f_sales_01 = st.text_input("NHÂN VIÊN SALES 01 phụ trách *", value="Như")
+            f_sales_02 = st.text_input("NHÂN VIÊN SALES 02")
+            f_doi_tac = st.text_input("ĐỐI TÁC / ĐẠI LÝ ĐẶT")
+            f_pt_tt = st.text_input("PHƯƠNG THỨC TT (Ví dụ: Chuyển khoản, Công nợ)")
+            f_hh_rate = st.selectbox("TỶ LỆ HOA HỒNG TRÍCH THƯỞNG", ["10%", "5%", "0%"])
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.form_submit_button("💾 Lưu Nhật Ký & Tự Động Kết Chuyển Kế Toán"):
+            if f_code and f_tuyen and f_sales_01:
+                f_g_profit = f_revenue - f_cost
+                f_hh_5 = f_g_profit * 0.05 if f_hh_rate == "5%" and f_g_profit > 0 else 0
+                f_hh_10 = f_g_profit * 0.10 if f_hh_rate == "10%" and f_g_profit > 0 else 0
                 
-            if st.form_submit_button("💾 Xác Nhận Tạo Hồ Sơ Booking Mới"):
-                if in_tuyen and in_sales:
-                    g_profit = in_rev - in_cost
-                    new_row = {
-                        "CODE": in_code, "NGÀY": in_ngay, "GIỜ": in_gio, "DỊCH VỤ": in_dichvu, "LOẠI": "Ind.", 
-                        "TUYẾN": in_tuyen, "XE": in_xe, "LƯU Ý XE": "", "BIỂN SỐ": "Chưa gán", "TÀI XẾ": "Chưa điều xe", 
-                        "HDV": "Không có", "SỐ PAX": in_pax, "ĐỐI TÁC": in_doitac, "VAT": "", "TÊN KHÁCH": in_khach, 
-                        "ĐIỂM ĐÓN": in_don, "Đ/C ĐÓN": "", "ĐIỂM TRẢ": in_tra, "Đ/C TRẢ": "", "DOANH THU USD": 0, 
-                        "DOANH THU VND": in_rev, "PHƯƠNG THỨC TT": in_tt, "Ngày TT": "", "CỌC": 0, "TX THU": 0, 
-                        "GIÁ VỐN NCC": in_cost, "NCC": "Chưa gán", "SALES 01": in_sales, "SALES 02": "", "LƯU Ý": "", 
-                        "CHI PHÍ": in_cost, "LỢI NHUẬN GỘP": g_profit, "HH sale 5%": 0, "HH sale 10%": (g_profit * 0.1 if g_profit > 0 else 0)
-                    }
-                    # Tiến hành nối dòng dữ liệu mới và thực hiện ghi đè lưu trữ vĩnh viễn
-                    df_extended = pd.concat([df_master, pd.DataFrame([new_row])], ignore_index=True)
-                    df_extended.to_csv(DATA_FILE, index=False, encoding='utf-8-sig')
-                    st.success(f"✔️ Đã lập hồ sơ thành công cho Đơn hàng {in_code}!")
-                    st.rerun()
+                new_record = {
+                    "CODE": f_code, "NGÀY": f_ngay, "GIỜ": f_gio, "DỊCH VỤ": f_dich_vu, "LOẠI": f_loai, "TUYẾN": f_tuyen,
+                    "XE": f_loai_xe, "LƯU Ý XE": f_luu_y_xe, "BIỂN SỐ": f_bien_so, "TÀI XẾ": f_tai_xe, "HDV": f_hdv,
+                    "SỐ PAX": f_so_pax, "ĐỐI TÁC": f_doi_tac, "VAT": "", "TÊN KHÁCH": f_ten_khach, "ĐIỂM ĐÓN": f_diem_don,
+                    "Đ/C ĐÓN": f_diem_don, "ĐIỂM TRẢ": f_diem_tra, "Đ/C TRẢ": f_diem_tra, "DOANH THU USD": f_usd,
+                    "DOANH THU VND": f_revenue, "PHƯƠNG THỨC TT": f_pt_tt, "Ngày TT": "", "CỌC": 0,
+                    "TX THU": 0, "GIÁ VỐN NCC": f_cost, "NCC": f_ncc, "SALES 01": f_sales_01, "SALES 02": f_sales_02,
+                    "LƯU Ý": "", "CHI PHÍ": f_cost, "LỢI NHUẬN GỘP": f_g_profit, "HH sale 5%": f_hh_5, "HH sale 10%": f_hh_10
+                }
+                
+                df_new_row = pd.DataFrame([new_record])
+                st.session_state.master_df = pd.concat([st.session_state.master_df, df_new_row], ignore_index=True)
+                st.session_state.master_df.to_csv(DATABASE_FILE, index=False, encoding='utf-8-sig')
+                st.success(f"✔️ Đã lưu thành công và đồng bộ dòng nhật ký {f_code} vào tệp dữ liệu!")
+                st.rerun()
+            else:
+                st.error("⚠️ Vui lòng điền đầy đủ các mục bắt buộc dấu (*)")
 
-        st.markdown("### 📜 Đơn hàng vừa nhập gần đây")
-        st.dataframe(df_master.tail(5), use_container_width=True)
+    st.write("### 📜 Top 5 bản ghi mới nhất vừa ghi nhận")
+    if not st.session_state.master_df.empty:
+        st.dataframe(st.session_state.master_df.tail(5), use_container_width=True)
 
-    # ==========================================
-    # --- PHÂN HỆ 2: ĐIỀU PHỐI XE & TÀI XẾ (OPS) ---
-    # ==========================================
-    elif menu == "🎯 2. Điều Phối Xe & Tài Xế (Ops)":
-        st.subheader("🎯 Lịch Điều Xe Dùng Chung & Cập Nhật Trạng Thái Vận Hành")
-        
-        # Khung công cụ Chỉnh sửa/Điều xe cho cả các đơn đã hoàn thành
-        with st.expander("🛠️ Click mở form cập nhật thông tin Tài Xế / Biển Số / HDV cho Chuyến đi"):
-            list_codes = df_master["CODE"].dropna().tolist()
-            select_code = st.selectbox("Chọn Mã CODE chuyến xe cần điều phối / sửa đổi:", list_codes)
-            idx = df_master[df_master["CODE"] == select_code].index
-            row_data = df_master.loc[idx].iloc[0]
+# ==========================================
+# --- PHÂN HỆ 2: ĐIỀU HÀNH XE & CHỈNH SỬA TOUR (OPS) ---
+# ==========================================
+elif menu == "🎯 2. Điều Hành Xe & Chỉnh Sửa Tour (Ops)":
+    st.subheader("🎯 Quản lý Điều Hành & Chỉnh Sửa Dữ Liệu Tour / Xe Chạy")
+    
+    if not df_active.empty:
+        st.markdown("### 📝 Cập nhật thông tin / Chỉnh sửa Tour")
+        with st.expander("🛠️ Click vào đây để chỉnh sửa nhanh thông tin Tour bất kỳ"):
+            list_codes = sorted(df_active["CODE"].dropna().unique().tolist())
+            selected_code = st.selectbox("Chọn Mã CODE Tour cần sửa thông tin:", list_codes)
             
-            with st.form("ops_edit_form"):
-                o_c1, o_c2, o_c3 = st.columns(3)
-                with o_c1:
-                    u_txe = st.text_input("Đổi Tên Tài Xế:", value=str(row_data["TÀI XẾ"]))
-                    u_bso = st.text_input("Đổi Biển Số Xe:", value=str(row_data["BIỂN SỐ"]))
-                with o_c2:
-                    u_hdv = st.text_input("Đổi Hướng Dẫn Viên:", value=str(row_data["HDV"]))
-                    u_tt = st.text_input("Cập nhật Phương thức TT / Trạng thái:", value=str(row_data["PHƯƠNG THỨC TT"]))
-                with o_c3:
-                    u_rev = st.number_input("Sửa Doanh Thu VND:", value=int(row_data["DOANH THU VND"]))
-                    u_cost = st.number_input("Sửa Chi Phí NCC:", value=int(row_data["GIÁ VỐN NCC"]))
+            # Khởi tạo bản ghi sửa đổi
+            current_row = df_active[df_active["CODE"] == selected_code].iloc[0]
+            
+            with st.form("edit_form"):
+                ec1, ec2, ec3 = st.columns(3)
+                with ec1:
+                    u_tuyen = st.text_input("Sửa Tuyến đường / Tên Tour:", value=str(current_row["TUYẾN"]))
+                    u_pax = st.number_input("Sửa Số Pax:", min_value=1, value=int(current_row["SỐ PAX"]))
+                     u_txe = st.text_input("Gán / Đổi Tài Xế:", value=str(current_row["TÀI XẾ"]) if pd.notna(current_row["TÀI XẾ"]) else "")
+                with ec2:
+                    u_bso = st.text_input("Sửa Biển Số Xe:", value=str(current_row["BIỂN SỐ"]) if pd.notna(current_row["BIỂN SỐ"]) else "")
+                    u_hdv = st.text_input("Sửa Hướng Dẫn Viên:", value=str(current_row["HDV"]) if pd.notna(current_row["HDV"]) else "")
+                    u_pt_tt = st.text_input("Sửa Phương thức TT / Trạng thái:", value=str(current_row["PHƯƠNG THỨC TT"]) if pd.notna(current_row["PHƯƠNG THỨC TT"]) else "")
+                with ec3:
+                    u_rev = st.number_input("Cập nhật lại Doanh Thu VND:", value=int(current_row["DOANH THU VND"]))
+                    u_cost = st.number_input("Cập nhật lại Giá Vốn NCC:", value=int(current_row["GIÁ VỐN NCC"]))
+                    u_luuy = st.text_input("Sửa Ghi chú / Lưu ý:", value=str(current_row["LƯU Ý"]) if pd.notna(current_row["LƯU Ý"]) else "")
+                
+                if st.form_submit_button("💾 Xác Nhận Cập Nhật Thay Đổi"):
+                    u_g_profit = u_rev - u_cost
+                    u_hh5 = u_g_profit * 0.05 if current_row["HH sale 5%"] > 0 and u_g_profit > 0 else 0
+                    u_hh10 = u_g_profit * 0.10 if current_row["HH sale 10%"] > 0 and u_g_profit > 0 else 0
                     
-                if st.form_submit_button("🔄 Xác Nhận Cập Nhật Lịch Điều Xe"):
-                    df_master.loc[idx, ["TÀI XẾ", "BIỂN SỐ", "HDV", "PHƯƠNG THỨC TT", "DOANH THU VND", "GIÁ VỐN NCC", "LỢI NHUẬN GỘP"]] = [u_txe, u_bso, u_hdv, u_tt, u_rev, u_cost, (u_rev - u_cost)]
-                    df_master.to_csv(DATA_FILE, index=False, encoding='utf-8-sig')
-                    st.success(f"✔️ Đã đồng bộ trạng thái mới cho chuyến {select_code}!")
+                    st.session_state.master_df.loc[st.session_state.master_df["CODE"] == selected_code, [
+                        "TUYẾN", "SỐ PAX", "TÀI XẾ", "BIỂN SỐ", "HDV", "PHƯƠNG THỨC TT", "DOANH THU VND", "GIÁ VỐN NCC", "LƯU Ý", "LỢI NHUẬN GỘP", "HH sale 5%", "HH sale 10%"
+                    ]] = [u_tuyen, u_pax, u_txe, u_bso, u_hdv, u_pt_tt, u_rev, u_cost, u_luuy, u_g_profit, u_hh5, u_hh10]
+                    
+                    st.session_state.master_df.to_csv(DATABASE_FILE, index=False, encoding='utf-8-sig')
+                    st.success(f"✔️ Đã cập nhật thành công dữ liệu chỉnh sửa của Tour {selected_code}!")
                     st.rerun()
                     
-        st.markdown("### 📋 Nhật Ký Điều Phối Vận Tải Toàn Đoàn")st.dataframe(df_active[["CODE", "NGÀY", "GIỜ", "DỊCH VỤ", "TUYẾN", "XE", "BIỂN SỐ", "TÀI XẾ", "HDV", "SỐ PAX", "PHƯƠNG THỨC TT"]], use_container_width=True)
+        st.markdown("---")
+        st.markdown("### 🚎 Nhật Ký Điều Phối Vận Tải Toàn Đoàn")
+        st.dataframe(df_active[["CODE", "NGÀY", "GIỜ", "DỊCH VỤ", "TUYẾN", "XE", "BIỂN SỐ", "TÀI XẾ", "HDV", "SỐ PAX", "PHƯƠNG THỨC TT"]], use_container_width=True)
+    else:
+        st.info("Chưa có dữ liệu vận hành điều xe trong kỳ lọc.")
 
 # ==========================================
 # --- PHÂN HỆ 3: QUYẾT TOÁN HOA HỒNG SALES ---
 # ==========================================
-elif menu == "💵 3. Quyết Toán Hoa Hồng Sales":
-    st.subheader("💵 Quyết Toán Lương Thưởng Hoa Hồng Nhân Viên Kinh Doanh")
-    df_active["Tổng Hoa Hồng Chi"] = df_active["HH sale 5%"] + df_active["HH sale 10%"]
-    df_sales = df_active.groupby("SALES 01").agg({
-        "CODE": "count",
-        "SỐ PAX": "sum",
-        "DOANH THU VND": "sum",
-        "Tổng Hoa Hồng Chi": "sum"
-    }).reset_index().rename(columns={
-        "SALES 01": "Nhân Viên Sales Phụ Trách",
-        "CODE": "Số Lượng Đơn Chốt",
-        "SỐ PAX": "Tổng Pax Mang Về",
-        "DOANH THU VND": "Doanh Số Mang Về (VND)",
-        "Tổng Hoa Hồng Chi": "Tiền Hoa Hồng Nhận (VND)"
-    })
-    st.dataframe(df_sales, use_container_width=True)
-    st.metric("Tổng chi ngân sách hoa hồng trích thưởng trong kỳ:", f"{df_sales['Tiền Hoa Hồng Nhận (VND)'].sum():,.0f} VND")
+elif menu == "💵 3. Quyết Toán Hoa Hồng Sales & Đại Lý":
+    st.subheader("💵 Phân hệ kiểm soát và trích chi lương thưởng hoa hồng động")
+    if not df_active.empty:
+        df_active["HH_Tổng"] = df_active["HH sale 5%"].fillna(0) + df_active["HH sale 10%"].fillna(0)
+        st.markdown("##### 🔍 Chi tiết nghĩa vụ hoa hồng phân bổ theo Nhân viên Sales")
+        df_sales_group = df_active.groupby("SALES 01").agg({
+            "CODE": "count",
+            "SỐ PAX": "sum",
+            "DOANH THU VND": "sum",
+            "HH_Tổng": "sum"
+        }).reset_index().rename(columns={
+            "SALES 01": "Nhân Viên Sales / Đại Lý",
+            "CODE": "Tổng Số Đơn Chốt",
+            "SỐ PAX": "Tổng Số Pax Mang Về",
+            "DOANH THU VND": "Doanh Số Đạt Được (VND)",
+            "HH_Tổng": "Tổng Tiền Hoa Hồng Nhận (VND)"
+        })
+        st.dataframe(df_sales_group, use_container_width=True)
+        st.metric("Tổng ngân sách trích chi hoa hồng toàn công ty:", f"{df_sales_group['Tổng Tiền Hoa Hồng Nhận (VND)'].sum():,.0f} VND")
+    else:
+        st.info("Chưa có dữ liệu đối soát hoa hồng trong kỳ lọc.")
 
 # ==========================================
 # --- PHÂN HỆ 4: TRUNG TÂM BÁO CÁO TÀI CHÍNH ---
 # ==========================================
 elif menu == "📊 4. Trung Tâm Báo Cáo Tài Chính (P&L)":
-    st.subheader("🏛️ Báo Cáo Lãi Lỗ Doanh Nghiệp (P&L) - Kết Quả Thu Chi")
-    df_active["HH_Tổng"] = df_active["HH sale 5%"] + df_active["HH sale 10%"]
-    df_active["Lợi_Nhuận_Thuần"] = df_active["LỢI NHUẬN GỘP"] - df_active["HH_Tổng"]
-    r_gross = df_active["DOANH THU VND"].sum()
-    c_ncc = df_active["GIÁ VỐN NCC"].sum()
-    p_gross = df_active["LỢI NHUẬN GỘP"].sum()
-    c_comm = df_active["HH_Tổng"].sum()
-    p_net = df_active["Lợi_Nhuận_Thuần"].sum()
-    
-    mc1, mc2, mc3, mc4 = st.columns(4)
-    mc1.metric("Doanh Thu Hoạt Động (Gross)", f"{r_gross:,.0f} VND")
-    mc2.metric("Chi Phí Giá Vốn Đầu Vào", f"{c_ncc:,.0f} VND")
-    mc3.metric("Chi Phí Hoa Hồng Trích Chi", f"{c_comm:,.0f} VND")
-    mc4.metric("LỢI NHUẬN THUẦN (NET)", f"{p_net:,.0f} VND", delta=f"{((p_net/r_gross)*100) if r_gross > 0 else 0:.1f}% ROS")
-    
-    p_l_df = pd.DataFrame([
-        {"Chỉ tiêu tài chính doanh nghiệp": "1. TỔNG DOANH THU HOẠT ĐỘNG KINH DOANH TOUR & VẬN TẢI", "Giá trị (VND)": r_gross},
-        {"Chỉ tiêu tài chính doanh nghiệp": "2. CHI PHÍ GIÁ VỐN DỊCH VỤ (Trả Đội xe, Land tour, Vé...)", "Giá trị (VND)": c_ncc},
-        {"Chỉ tiêu tài chính doanh nghiệp": "3. LỢI NHUẬN GỘP KINH DOANH SƠ CẤP (Mục 1 - Mục 2)", "Giá trị (VND)": p_gross},
-        {"Chỉ tiêu tài chính doanh nghiệp": "4. TỔNG CHI PHÍ HOA HỒNG (Thưởng Sales & Đối tác đại lý)", "Giá trị (VND)": c_comm},
-        {"Chỉ tiêu tài chính doanh nghiệp": "5. LỢI NHUẬN THUẦN TRƯỚC THUẾ DOANH NGHIỆP THU VỀ (Mục 3 - Mục 4)", "Giá trị (VND)": p_net}
-    ])
-    st.table(p_l_df)
+    st.subheader("📊 Hệ Thống Phân Tích Kết Quả Kinh Doanh & Hiệu Suất Sinh Lời")
+    if not df_active.empty:
+        df_active["HH_Tổng"] = df_active["HH sale 5%"].fillna(0) + df_active["HH sale 10%"].fillna(0)
+        df_active["Lợi_Nhuận_Thuần"] = df_active["LỢI NHUẬN GỘP"] - df_active["HH_Tổng"]
+        r_gross = df_active["DOANH THU VND"].sum()
+        c_ncc = df_active["GIÁ VỐN NCC"].sum()
+        p_gross = df_active["LỢI NHUẬN GỘP"].sum()
+        c_comm = df_active["HH_Tổng"].sum()
+        p_net = df_active["Lợi_Nhuận_Thuần"].sum()
+        
+        mc1, mc2, mc3, mc4 = st.columns(4)
+        mc1.metric("Doanh Thu Tổng (Gross)", f"{r_gross:,.0f} VND")
+        mc2.metric("Chi Phí Giá Vốn NCC", f"{c_ncc:,.0f} VND")
+        mc3.metric("Tổng Chi Hoa Hồng", f"{c_comm:,.0f} VND")
+        mc4.metric("Lợi Nhuận Thuần Thực Thu", f"{p_net:,.0f} VND", delta=f"{((p_net/r_gross)*100) if r_gross > 0 else 0:.1f}% ROS")
+        
+        p_l_display = pd.DataFrame([
+            {"Hạng mục tài chính doanh nghiệp": "A. TỔNG DOANH THU HOẠT ĐỘNG KINH DOANH TOUR & XE", "Giá trị kết chuyển (VND)": r_gross},
+            {"Hạng mục tài chính doanh nghiệp": "B. CHI PHÍ GIÁ VỐN DỊCH VỤ (Trả nhà xe, land đối tác, vé)", "Giá trị kết chuyển (VND)": c_ncc},
+            {"Hạng mục tài chính doanh nghiệp": "C. LỢI NHUẬN GỘP KINH DOANH SƠ CẤP (A - B)", "Giá trị kết chuyển (VND)": p_gross},
+            {"Hạng mục tài chính doanh nghiệp": "D. CHI PHÍ BÁN HÀNG (Trích thưởng hoa hồng Sales 5% & 10%)", "Giá trị kết chuyển (VND)": c_comm},
+            {"Hạng mục tài chính doanh nghiệp": "E. LỢI NHUẬN THUẦN DOANH NGHIỆP BIÊN ĐỘNG (C - D)", "Giá trị kết chuyển (VND)": p_net}
+        ])
+        st.table(p_l_display)
+    else:
+        st.info("Không có dữ liệu tài chính trong khoảng thời gian lọc.")
 
 # ==========================================
-# --- PHÂN HỆ 5: QUẢN LÝ GIÁ VỐN & CÔNG NỢ NCC ---
+# --- PHÂN HỆ 5: QUẢN LÝ CÔNG NỢ NHÀ CUNG CẤP ---
 # ==========================================
-elif menu == "🏦 5. Quản Lý Giá Vốn & Công Nợ NCC":
-    st.subheader("🏦 Bảng Đối Soát Giá Vốn & Nghĩa Vụ Thanh Toán Nhà Cung Cấp")
-    df_active = df_active[df_active["NCC"].notna() & (df_active["NCC"] != "0") & (df_active["NCC"] != " ")]
-    df_ncc_debt = df_active.groupby("NCC").agg({
-        "CODE": "count",
-        "GIÁ VỐN NCC": "sum"
-    }).reset_index().rename(columns={
-        "NCC": "Tên Đơn Vị Nhà Cung Cấp / Nhà Xe Đối Tác",
-        "CODE": "Số Chuyến Đi Đã Phục Vụ",
-        "GIÁ VỐN NCC": "Nghĩa Vụ Thanh Toán Nợ Tích Lũy (VND)"
-    })
-    st.dataframe(df_ncc_debt, use_container_width=True)
-    st.metric("Tổng giá trị công nợ đầu vào NCC toàn hệ thống:", f"{df_ncc_debt['Nghĩa Vụ Thanh Toán Nợ Tích Lũy (VND)'].sum():,.0f} VND")
+elif menu == "🏦 5. Quản Lý Công Nợ Nhà Cung Cấp":
+    st.subheader("🏦 Bảng đối soát nghĩa vụ thanh toán chi trả cho các Nhà cung cấp dịch vụ (NCC)")
+    if not df_active.empty:
+        df_debt_clean = df_active[df_active["NCC"].notna() & (df_active["NCC"] != "0") & (df_active["NCC"] != " ")]
+        df_debt_group = df_debt_clean.groupby("NCC").agg({
+            "CODE": "count",
+            "GIÁ VỐN NCC": "sum"
+        }).reset_index().rename(columns={
+            "NCC": "Tên Nhà Cung Cấp (Đối Tác Đầu Vào)",
+            "CODE": "Số Lượng Chuyến Đi Phục Vụ",
+            "GIÁ VỐN NCC": "Tổng Tiền Công Ty Phải Trả (VND)"
+        })
+        st.dataframe(df_debt_group, use_container_width=True)
+        st.metric("Tổng Số Tiền Phải Chi Trả NCC Tạm Tính:", f"{df_debt_group['Tổng Tiền Công Ty Phải Trả (VND)'].sum():,.0f} VND")
+    else:
+        st.info("Chưa có dữ liệu đối soát công nợ đối tác trong kỳ lọc.")
 
 # ==========================================
 # --- PHÂN HỆ 6: BẢNG TỔNG HỢP MASTER LOG TOÀN DIỆN ---
 # ==========================================
 elif menu == "🗂️ 6. Bảng Tổng Hợp Dữ Liệu Toàn Diện":
-    st.subheader("🗂️ Trung Tâm Tra Cứu & Kết Xuất Dữ Liệu Master Log")
-    f1, f2, f3 = st.columns(3)
-    with f1: 
-        s_t = st.text_input("Lọc nhanh theo Tuyến / Tên Tour:")
+    st.subheader("🗂️ Bảng Phân Tích & Tổng Hợp Master Data Toàn Hệ Thống")
+    st.caption("Dữ liệu thô đồng bộ thời gian thực phục vụ đối soát đa chiều.")
+    if not df_active.empty:
+        f1, f2, f3 = st.columns(3)
+        with f1: 
+            s_tuyen = st.text_input("Tìm nhanh theo Tuyến đường / Tên Tour:")
+        with f2: 
+            s_sales = st.text_input("Tìm nhanh theo Nhân viên Sales phụ trách:")
+        with f3: 
+            s_txe = st.text_input("Tìm nhanh theo Tên Tài xế:")
+            
+        if s_tuyen:
+            df_active = df_active[df_active["TUYẾN"].str.contains(s_tuyen, case=False, na=False)]
+        if s_sales:
+            df_active = df_active[df_active["SALES 01"].str.contains(s_sales, case=False, na=False)]
+        if s_txe:
+            df_active = df_active[df_active["TÀI XẾ"].str.contains(s_txe, case=False, na=False)]
+            
+        st.dataframe(df_active, use_container_width=True)
+        csv_bytes = df_active.to_csv(index=False).encode('utf-8-sig')
+        st.download_button(
+            label="📥 Xuất Bảng Tổng Hợp Dữ Liệu Ra File Excel (.CSV)",
+            data=csv_bytes,
+            file_name=f"Master_Log_Tour_All_{datetime.date.today()}.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("Hệ thống dữ liệu trống trong khoảng thời gian lọc.")
