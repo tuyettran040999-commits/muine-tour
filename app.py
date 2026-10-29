@@ -152,99 +152,101 @@ elif menu == "🎯 2. Gom Xe & Điều Phối Tour (Ops)":
 # ==========================================
 # --- PHÂN HỆ 3: QUYẾT TOÁN HOA HỒNG ---
 # ==========================================
-elif menu == "💵 3. Quyết Toán Hoa Hồng Sales & Đại Lý":st.subheader("💵 Phân hệ kiểm soát và tính toán hoa hồng thực chi")
-df_bk = st.session_state.bookings.copy()
-df_bk["Tổng Doanh Thu"] = df_bk["Số Khách"] * df_bk["Giá Bán/Khách"]
-df_bk["Tổng Hoa Hồng"] = df_bk["Số Khách"] * df_bk["Mức HH/Khách"]
-st.markdown("##### 🔍 Chi tiết nghĩa vụ hoa hồng theo phương thức xử lý")
-col_t1, col_t2 = st.columns(2)
-with col_t1:
-st.info("🔹 Loại 1: Công ty chi trả sau")
-df_tra_sau = df_bk[df_bk["Hình Thức HH"] == "Công ty chi trả sau"]
-if not df_tra_sau.empty:
-st.dataframe(df_tra_sau[["Mã BK", "Người Bán/Đối Tác", "Số Khách", "Tổng Hoa Hồng", "Trạng Thái Thu"]], use_container_width=True)
-st.metric("Tổng Hoa Hồng Cần Trả Sau", f"{df_tra_sau['Tổng Hoa Hồng'].sum():,} VND")
-else:
-st.caption("Chưa có dữ liệu hoa hồng chi trả sau.")
-with col_t2:
-st.success("🔹 Loại 2: Trừ thẳng khi thanh toán (Thu hộ)")
-df_tru_thang = df_bk[df_bk["Hình Thức HH"] == "Trừ thẳng khi thanh toán (Thu hộ)"]
-if not df_tru_thang.empty:
-st.dataframe(df_tru_thang[["Mã BK", "Người Bán/Đối Tác", "Số Khách", "Tổng Hoa Hồng", "Tổng Doanh Thu"]], use_container_width=True)
-st.metric("Tổng Số Tiền Thực Thu Hộ", f"{(df_tru_thang['Tổng Doanh Thu'].sum() - df_tru_thang['Tổng Hoa Hồng'].sum()):,} VND")
-else:
-st.caption("Chưa có dữ liệu đại lý trừ thẳng hoa hồng.")
+elif menu == "💵 3. Quyết Toán Hoa Hồng Sales & Đại Lý":
+    st.subheader("💵 Phân hệ kiểm soát và tính toán hoa hồng thực chi")
+    df_bk = st.session_state.bookings.copy()
+    df_bk["Tổng Doanh Thu"] = df_bk["Số Khách"] * df_bk["Giá Bán/Khách"]
+    df_bk["Tổng Hoa Hồng"] = df_bk["Số Khách"] * df_bk["Mức HH/Khách"]
+    
+    st.markdown("##### 🔍 Chi tiết nghĩa vụ hoa hồng theo phương thức xử lý")
+    col_t1, col_t2 = st.columns(2)
+    
+    with col_t1:
+        st.info("🔹 Loại 1: Công ty chi trả sau")
+        df_tra_sau = df_bk[df_bk["Hình Thức HH"] == "Công ty chi trả sau"]
+        if not df_tra_sau.empty:
+            st.dataframe(df_tra_sau[["Mã BK", "Người Bán/Đối Tác", "Số Khách", "Tổng Hoa Hồng", "Trạng Thái Thu"]], use_container_width=True)
+            st.metric("Tổng Hoa Hồng Cần Trả Sau", f"{df_tra_sau['Tổng Hoa Hồng'].sum():,} VND")
+        else:
+            st.caption("Chưa có dữ liệu hoa hồng chi trả sau.")
+        
+    with col_t2:
+        st.success("🔹 Loại 2: Trừ thẳng khi thanh toán (Thu hộ)")
+        df_tru_thang = df_bk[df_bk["Hình Thức HH"] == "Trừ thẳng khi thanh toán (Thu hộ)"]
+        if not df_tru_thang.empty:
+            st.dataframe(df_tru_thang[["Mã BK", "Người Bán/Đối Tác", "Số Khách", "Tổng Hoa Hồng", "Tổng Doanh Thu"]], use_container_width=True)
+            st.metric("Tổng Số Tiền Thực Thu Hộ", f"{(df_tru_thang['Tổng Doanh Thu'].sum() - df_tru_thang['Tổng Hoa Hồng'].sum()):,} VND")
+        else:
+            st.caption("Chưa có dữ liệu đại lý trừ thẳng hoa hồng.")
 
-==========================================
-
-
---- PHÂN HỆ 4: BÁO CÁO DOANH THU & LỢI NHUẬN ---
-
-
-==========================================
-
+# ==========================================
+# --- PHÂN HỆ 4: BÁO CÁO DOANH THU & LỢI NHUẬN ---
+# ==========================================
 elif menu == "📊 4. Báo Cáo Doanh Thu Lợi Nhuận Đối Tác":
-st.subheader("📊 Báo cáo kết quả kinh doanh gộp (P&L) theo từng mã xe ghép")
-list_chuyen = list(set(st.session_state.bookings["Mã Xe Ghép"].tolist()))
-for chuyen in list_chuyen:
-if pd.isna(chuyen) or chuyen == "Chưa xếp xe":
-continue
-st.markdown(f"#### 🚎 BÁO CÁO TOÁN CHUYẾN: {chuyen}")
-df_bk_chuyen = st.session_state.bookings[st.session_state.bookings["Mã Xe Ghép"] == chuyen]
-df_ops_chuyen = st.session_state.tour_ops[st.session_state.tour_ops["Mã Xe Ghép"] == chuyen]
-tong_pax = df_bk_chuyen["Số Khách"].sum()
-revenue = (df_bk_chuyen["Số Khách"] * df_bk_chuyen["Giá Bán/Khách"]).sum()
-total_hh = (df_bk_chuyen["Số Khách"] * df_bk_chuyen["Mức HH/Khách"]).sum()
-# Kiểm tra an toàn để tránh lỗi sập phần mềm khi Ops chưa cập nhật thông tin
-if not df_ops_chuyen.empty:
-cost_xe_co_dinh = int(df_ops_chuyen["Chi Phí Xe (VND)"].values[0]) + int(df_ops_chuyen["Chi Phí HDV (VND)"].values[0])
-cost_bien_doi_pax = tong_pax * int(df_ops_chuyen["Chi Phí Tour/Khách (VND)"].values[0])
-total_ops_cost = cost_xe_co_dinh + cost_bien_doi_pax
-st.markdown(f"""
+    st.subheader("📊 Báo cáo kết quả kinh doanh gộp (P&L) theo từng mã xe ghép")
+    list_chuyen = list(set(st.session_state.bookings["Mã Xe Ghép"].tolist()))
+    
+    for chuyen in list_chuyen:
+        if pd.isna(chuyen) or chuyen == "Chưa xếp xe": 
+            continue
+            
+        st.markdown(f"#### 🚎 BÁO CÁO TOÁN CHUYẾN: {chuyen}")
+        df_bk_chuyen = st.session_state.bookings[st.session_state.bookings["Mã Xe Ghép"] == chuyen]
+        df_ops_chuyen = st.session_state.tour_ops[st.session_state.tour_ops["Mã Xe Ghép"] == chuyen]
+        
+        tong_pax = df_bk_chuyen["Số Khách"].sum()
+        revenue = (df_bk_chuyen["Số Khách"] * df_bk_chuyen["Giá Bán/Khách"]).sum()
+        total_hh = (df_bk_chuyen["Số Khách"] * df_bk_chuyen["Mức HH/Khách"]).sum()
+        
+        if not df_ops_chuyen.empty:
+            cost_xe_co_dinh = int(df_ops_chuyen["Chi Phí Xe (VND)"].values[0]) + int(df_ops_chuyen["Chi Phí HDV (VND)"].values[0])
+            cost_bien_doi_pax = tong_pax * int(df_ops_chuyen["Chi Phí Tour/Khách (VND)"].values[0])
+            total_ops_cost = cost_xe_co_dinh + cost_bien_doi_pax
+            
+            st.markdown(f"""
+            <div style="border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9; border-radius: 5px; margin-bottom: 15px;">
+                <p style='margin: 0; color: #333;'><b>Tài xế:</b> {df_ops_chuyen['Tài Xế'].values[0]} ({df_ops_chuyen['Biển Số'].values[0]}) | <b>HDV:</b> {df_ops_chuyen['Hướng Dẫn Viên'].values[0]}</p>
+                <p style='margin: 5px 0 0 0; color: #333;'><b>Nhà hàng:</b> {df_ops_chuyen['Nhà Hàng'].values[0]} | <b>Khách sạn:</b> {df_ops_chuyen['Khách Sạn'].values[0]} | <b>Ghi chú:</b> {df_ops_chuyen['Ghi Chú'].values[0]}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            total_ops_cost = 0
+            st.warning(f"Chuyến xe {chuyen} chưa được khai báo chi phí vận hành bên Phân hệ 2.")
+            
+        profit = revenue - total_hh - total_ops_cost
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Tổng thu khách lẻ (Gross)", f"{revenue:,} VND")
+        c2.metric("Chi phí Hoa hồng", f"{total_hh:,} VND")
+        c3.metric("Chi phí Vận hành (Ops)", f"{total_ops_cost:,} VND")
+        c4.metric("Lợi nhuận gộp chuyến", f"{profit:,} VND", delta=f"{((profit/revenue)*100) if revenue > 0 else 0:.1f}% Tỷ suất")
+        st.markdown("---")
 
-Tài xế: {df_ops_chuyen['Tài Xế'].values[0]} ({df_ops_chuyen['Biển Số'].values[0]}) | HDV: {df_ops_chuyen['Hướng Dẫn Viên'].values[0]}
-Nhà hàng: {df_ops_chuyen['Nhà Hàng'].values[0]} | Khách sạn: {df_ops_chuyen['Khách Sạn'].values[0]} | Ghi chú: {df_ops_chuyen['Ghi Chú'].values[0]}
-
-""", unsafe_allow_html=True)
-else:
-total_ops_cost = 0
-st.warning(f"Chuyến xe {chuyen} chưa được khai báo chi phí vận hành bên Phân hệ 2.")
-profit = revenue - total_hh - total_ops_cost
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Tổng thu khách lẻ (Gross)", f"{revenue:,} VND")
-c2.metric("Chi phí Hoa hồng", f"{total_hh:,} VND")
-c3.metric("Chi phí Vận hành (Ops)", f"{total_ops_cost:,} VND")
-c4.metric("Lợi nhuận gộp chuyến", f"{profit:,} VND", delta=f"{((profit/revenue)*100) if revenue > 0 else 0:.1f}% Tỷ suất")
-st.markdown("---")
-
-==========================================
-
-
---- PHÂN HỆ 5: QUẢN LÝ CÔNG NỢ NHÀ CUNG CẤP ---
-
-
-==========================================
-
+# ==========================================
+# --- PHÂN HỆ 5: QUẢN LÝ CÔNG NỢ NHÀ CUNG CẤP ---
+# ==========================================
 elif menu == "🏦 5. Quản Lý Công Nợ Nhà Cung Cấp":
-st.subheader("🏦 Bảng phân rã & Đối soát công nợ các dịch vụ cấu thành Tour")
-df_ops = st.session_state.tour_ops.copy()
-if not df_ops.empty:
-records_debt = []
-for index, row in df_ops.iterrows():
-chuyen = row["Mã Xe Ghép"]
-df_bk_chuyen = st.session_state.bookings[st.session_state.bookings["Mã Xe Ghép"] == chuyen]
-tong_pax = df_bk_chuyen["Số Khách"].sum()
-if row["Tài Xế"]:
-records_debt.append({"Nhà Cung Cấp": f"Đội xe {row['Tài Xế']} ({row['Biển Số']})", "Nội Dung": f"Thuê xe tuyến {chuyen}", "Số Tiền Phải Trả": row["Chi Phí Xe (VND)"], "Trạng Thái": "Chưa thanh toán"})
-if row["Hướng Dẫn Viên"]:
-records_debt.append({"Nhà Cung Cấp": f"HDV {row['Hướng Dẫn Viên']}", "Nội Dung": f"Công tác phí {chuyen}", "Số Tiền Phải Trả": row["Chi Phí HDV (VND)"], "Trạng Thái": "Chưa thanh toán"})
-if row["Nhà Hàng"]:
-records_debt.append({"Nhà Cung Cấp": row["Nhà Hàng"], "Nội Dung": f"Suất ăn ghép xe {chuyen}", "Số Tiền Phải Trả": row["Chi Phí Tour/Khách (VND)"] * tong_pax, "Trạng Thái": "Chưa thanh toán"})
-if records_debt:
-df_debt_final = pd.DataFrame(records_debt)
-st.dataframe(df_debt_final, use_container_width=True)
-st.metric("Tổng Công Nợ Phải Trả Nhà Cung Cấp (Tạm tính)", f"{df_debt_final['Số Tiền Phải Trả'].sum():,} VND")
-else:
-st.info("Chưa phát sinh công nợ phải trả nhà cung cấp.")
-else:
-st.info("Chưa có dữ liệu vận hành từ điều hành Tour (Ops) để tổng hợp công nợ.")
+    st.subheader("🏦 Bảng phân rã & Đối soát công nợ các dịch vụ cấu thành Tour")
+    df_ops = st.session_state.tour_ops.copy()
+    
+    if not df_ops.empty:
+        records_debt = []
+        for index, row in df_ops.iterrows():
+            chuyen = row["Mã Xe Ghép"]
+            df_bk_chuyen = st.session_state.bookings[st.session_state.bookings["Mã Xe Ghép"] == chuyen]
+            tong_pax = df_bk_chuyen["Số Khách"].sum()
+            
+            if row["Tài Xế"]:
+                records_debt.append({"Nhà Cung Cấp": f"Đội xe {row['Tài Xế']} ({row['Biển Số']})", "Nội Dung": f"Thuê xe tuyến {chuyen}", "Số Tiền Phải Trả": row["Chi Phí Xe (VND)"], "Trạng Thái": "Chưa thanh toán"})
+            if row["Hướng Dẫn Viên"]:
+                records_debt.append({"Nhà Cung Cấp": f"HDV {row['Hướng Dẫn Viên']}", "Nội Dung": f"Công tác phí {chuyen}", "Số Tiền Phải Trả": row["Chi Phí HDV (VND)"], "Trạng Thái": "Chưa thanh toán"})
+            if row["Nhà Hàng"]:
+                records_debt.append({"Nhà Cung Cấp": row["Nhà Hàng"], "Nội Dung": f"Suất ăn ghép xe {chuyen}", "Số Tiền Phải Trả": row["Chi Phí Tour/Khách (VND)"] * tong_pax, "Trạng Thái": "Chưa thanh toán"})
+                
+        if records_debt:
+            df_debt_final = pd.DataFrame(records_debt)
+            st.dataframe(df_debt_final, use_container_width=True)
+            st.metric("Tổng Công Nợ Phải Trả Nhà Cung Cấp (Tạm tính)", f"{df_debt_final['Số Tiền Phải Trả'].sum():,} VND")
+        else:
+            st.info("Chưa phát sinh công nợ phải trả nhà cung cấp.")
+    else:
+        st.info("Chưa có dữ liệu vận hành từ điều hành Tour (Ops) để tổng hợp công nợ.")
